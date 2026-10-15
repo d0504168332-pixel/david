@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-heebo), system-ui, sans-serif;
+  --color-ink: #1c2230;
+  --color-paper: #f6f4ef;
+  --color-brand: var(--brand, #1f3a5f);
+  --color-gold: #c8a35a;
+}
+
+:root {
+  --brand: #1f3a5f;
+}
+
+html,
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-heebo), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.doc-shadow {
+  box-shadow:
+    0 1px 2px rgba(28, 34, 48, 0.06),
+    0 12px 40px -12px rgba(28, 34, 48, 0.22);
+}
+
+@utility field {
+  @apply w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-[15px] text-ink shadow-[0_1px_0_rgba(0,0,0,0.02)] outline-none transition placeholder:text-stone-400 focus:border-brand focus:ring-4 focus:ring-brand/10;
+}
+
+@utility label {
+  @apply mb-1.5 block text-[13px] font-semibold text-stone-600;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[14.5px] font-semibold transition active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-brand text-white shadow-sm hover:brightness-110;
+}
+@utility btn-ghost {
+  @apply btn border border-stone-200 bg-white text-ink hover:bg-stone-50;
+}
+@utility btn-danger {
+  @apply btn border border-rose-200 bg-white text-rose-700 hover:bg-rose-50;
+}
+@utility card {
+  @apply rounded-2xl border border-stone-200/80 bg-white shadow-[0_1px_2px_rgba(28,34,48,0.04)];
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  body {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-area {
+    position: static !important;
+  }
+  .print-area .doc-shadow {
+    transform: none !important;
+    position: static !important;
+    box-shadow: none !important;
+  }
+  .print-area > div {
+    height: auto !important;
+  }
+}
