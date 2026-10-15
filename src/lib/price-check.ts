@@ -2,6 +2,7 @@
 
 export type PastPrice = {
   quote_id: string;
+  client_id?: string | null;
   number: number | null;
   client_name: string;
   issue_date: string;
@@ -68,4 +69,13 @@ export function checkPrice(description: string, price: number, history: PastPric
   const avgDiff = ((price - avg) / avg) * 100;
   const alert = Math.abs(last.diffPct) >= threshold || Math.abs(avgDiff) >= threshold;
   return { matches: withDiff, last, avg, avgDiff, alert };
+}
+
+/** רק הצעות קודמות של אותו לקוח (לפי לקוח שמור, או לפי שם זהה) */
+export function sameClientHistory(history: PastPrice[], clientId: string | null | undefined, clientName: string) {
+  const name = clientName.trim().replace(/\s+/g, " ");
+  if (!clientId && !name) return [];
+  return history.filter(
+    (h) => (clientId && h.client_id === clientId) || (name && h.client_name.trim().replace(/\s+/g, " ") === name)
+  );
 }

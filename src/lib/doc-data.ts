@@ -47,7 +47,7 @@ import type { PastPrice } from "./price-check";
 export async function loadPriceHistory(supabase: any, businessId: string, excludeId?: string): Promise<PastPrice[]> {
   let q = supabase
     .from("quotes")
-    .select("id,number,client_name,issue_date,items")
+    .select("id,number,client_id,client_name,issue_date,items")
     .eq("business_id", businessId)
     .order("issue_date", { ascending: false })
     .limit(400);
@@ -59,6 +59,7 @@ export async function loadPriceHistory(supabase: any, businessId: string, exclud
       if (it.description && Number(it.unit_price) > 0)
         out.push({
           quote_id: row.id,
+          client_id: row.client_id,
           number: row.number,
           client_name: row.client_name,
           issue_date: row.issue_date,

@@ -130,11 +130,15 @@ export default function ProfileEditor({ profile, businessName, taxId }: { profil
                 {p.job_title ? <div className="text-stone-600">{p.job_title}</div> : null}
                 <div className="text-xs text-stone-500" dir="ltr" style={{ textAlign: "right" }}>{[p.phone, profile.email].filter(Boolean).join(" · ")}</div>
               </div>
-              <div className="flex items-center">
-                {p.show_stamp ? <Stamp businessName={businessName} fullName={p.full_name || "השם שלך"} jobTitle={p.job_title} taxId={taxId} color={p.stamp_color} shape={p.stamp_shape} size={104} /> : null}
+              <div className="flex flex-col items-center">
+                {p.show_stamp ? (
+                  <div className={p.show_signature ? (p.stamp_shape === "round" || p.stamp_shape === "rect" ? "-mb-3" : "-mb-1") : ""}>
+                    <Stamp businessName={businessName} fullName={p.full_name || "השם שלך"} jobTitle={p.job_title} taxId={taxId} color={p.stamp_color} shape={p.stamp_shape} size={p.stamp_shape === "round" ? 96 : p.stamp_shape === "rect" ? 86 : 118} />
+                  </div>
+                ) : null}
                 {p.show_signature ? (
-                  <div className={`relative z-10 text-center ${p.show_stamp ? "-ms-8" : ""}`}>
-                    <Signature name={p.full_name} style={p.signature_style as SignatureStyle} color={p.signature_color} image={p.signature_image} height={58} />
+                  <div className="relative text-center">
+                    <Signature name={p.full_name} style={p.signature_style as SignatureStyle} color={p.signature_color} image={p.signature_image} height={54} />
                     <div className="mt-0.5 border-t border-stone-300 pt-0.5 text-[10px] text-stone-500">חתימה</div>
                   </div>
                 ) : null}

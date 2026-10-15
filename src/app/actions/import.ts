@@ -3,7 +3,7 @@
 import { requireBusiness } from "@/lib/auth";
 import { loadPriceHistory } from "@/lib/doc-data";
 import { parseRequestHeuristic, type ParsedRequest } from "@/lib/parse-request";
-import { findSimilar } from "@/lib/price-check";
+import { findSimilar, sameClientHistory } from "@/lib/price-check";
 import type { Client, QuoteItem } from "@/lib/types";
 
 export type ImportResult = {
@@ -83,8 +83,10 @@ export async function parseEmailRequest(text: string): Promise<ImportResult> {
 
   // מחיר מוצע מהיסטוריית ההצעות
   const history = await loadPriceHistory(supabase, business.id);
+  // מחיר מוצע: קודם ממה שהוצע לאותו לקוח, אחרת מכל ההיסטוריה של העסק
+  const own = sameClientHistory(history, match?.id, match?.name ?? parsed.client_name);
   const items = parsed.items.map((it) => {
-    const m = findSimilar(it.description, history)[0];
+    const m = findSimilar(it.description, own)[0] ?? findSimilar(it.description, history)[0];
     return {
       id: Math.random().toString(36).slice(2, 10),
       description: it.description,

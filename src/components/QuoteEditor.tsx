@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, Eye, PencilLine, Plus, Save, Trash2, AlignRight, TriangleAlert, TrendingUp, TrendingDown, History } from "lucide-react";
-import { checkPrice, type PastPrice } from "@/lib/price-check";
+import { checkPrice, sameClientHistory, type PastPrice } from "@/lib/price-check";
 import QuoteDocument, { type DocAuthor, type DocBusiness } from "@/components/doc/QuoteDocument";
 import DocPreview from "@/components/doc/DocPreview";
 import { saveQuote, type QuoteInput } from "@/app/actions/quotes";
@@ -66,8 +66,12 @@ export default function QuoteEditor({ business, author, clients, initial, histor
 
   const totals = useMemo(() => calcTotals(q), [q]);
   const priceChecks = useMemo(
-    () => Object.fromEntries(q.items.map((it) => [it.id, checkPrice(it.description, Number(it.unit_price), history)])),
-    [q.items, history]
+    () => {
+      // ההשוואה היא רק מול הצעות קודמות של אותו לקוח
+      const own = sameClientHistory(history, q.client_id, q.client_name);
+      return Object.fromEntries(q.items.map((it) => [it.id, checkPrice(it.description, Number(it.unit_price), own)]));
+    },
+    [q.items, q.client_id, q.client_name, history]
   );
   const alertCount = Object.values(priceChecks).filter((c) => c?.alert).length;
   const [ackAlerts, setAckAlerts] = useState(false);
@@ -97,7 +101,7 @@ export default function QuoteEditor({ business, author, clients, initial, histor
     setError(null);
     if (alertCount > 0 && !ackAlerts) {
       setAckAlerts(true);
-      setError(`שים לב: ${alertCount === 1 ? "פריט אחד" : `${alertCount} פריטים`} במחיר שונה מהצעות קודמות. לחץ שוב כדי לשמור בכל זאת.`);
+      setError(`שים לב: ${alertCount === 1 ? "פריט אחד" : `${alertCount} פריטים`} במחיר שונה ממה שהצעת ללקוח הזה בעבר. לחץ שוב כדי לשמור בכל זאת.`);
       return;
     }
     start(async () => {
@@ -339,7 +343,7 @@ export default function QuoteEditor({ business, author, clients, initial, histor
               <span className={`font-semibold ${ackAlerts && alertCount ? "text-amber-700" : "text-rose-600"}`}>{error}</span>
             ) : alertCount ? (
               <span className="flex items-center gap-1.5 font-semibold text-amber-700">
-                <TriangleAlert className="size-4 shrink-0" /> {alertCount} פערי מחיר מול הצעות קודמות
+                <TriangleAlert className="size-4 shrink-0" /> {alertCount} פערי מחיר מול הצעות קודמות ללקוח
               </span>
             ) : <span className="text-stone-500">סה״כ: <b className="text-ink tabular-nums">{money(totals.total)}</b></span>}
           </div>
@@ -409,13 +413,12 @@ function PriceHint({ check, prefix, clientName, onUse }: { check: Check; prefix:
   if (!check) return null;
   const { last, avg, alert, matches } = check;
   const up = last.diffPct > 0;
-  const sameClient = clientName.trim() && last.client_name.trim() === clientName.trim();
   const ref = `${prefix ?? ""}${last.number ?? ""}`;
   const date = new Date(last.issue_date + "T00:00:00").toLocaleDateString("he-IL");
   if (!alert) {
     return (
       <div className="flex items-center gap-1.5 text-xs text-stone-500">
-        <History className="size-3.5" /> תואם למחיר בהצעה {ref} ({money(last.unit_price)})
+        <History className="size-3.5" /> תואם למחיר שהצעת ללקוח בהצעה {ref} ({money(last.unit_price)})
       </div>
     );
   }
@@ -425,10 +428,10 @@ function PriceHint({ check, prefix, clientName, onUse }: { check: Check; prefix:
         {up ? <TrendingUp className="mt-0.5 size-4 shrink-0" /> : <TrendingDown className="mt-0.5 size-4 shrink-0" />}
         <div className="min-w-0 flex-1">
           <div className="font-bold">
-            פער של {Math.abs(last.diffPct).toFixed(0)}% {up ? "מעל" : "מתחת"} להצעה קודמת דומה
+            פער של {Math.abs(last.diffPct).toFixed(0)}% {up ? "מעל" : "מתחת"} למה שהצעת ללקוח הזה בעבר
           </div>
           <div>
-            בהצעה {ref} {sameClient ? "ללקוח הזה" : `ל${last.client_name}`} ({date}) המחיר היה <b>{money(last.unit_price)}</b>
+            בהצעה {ref} מתאריך {date} המחיר היה <b>{money(last.unit_price)}</b>
             {matches.length > 1 ? <> · ממוצע {matches.length} הצעות: <b>{money(avg)}</b></> : null}
           </div>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -446,7 +449,7 @@ function PriceHint({ check, prefix, clientName, onUse }: { check: Check; prefix:
               {matches.map((m, i) => (
                 <li key={i} className="flex justify-between gap-2">
                   <span className="truncate">
-                    {prefix}{m.number} · {m.client_name} · {new Date(m.issue_date + "T00:00:00").toLocaleDateString("he-IL")} · "{m.description}"
+                    {prefix}{m.number} · {new Date(m.issue_date + "T00:00:00").toLocaleDateString("he-IL")} · "{m.description}"
                   </span>
                   <b className="shrink-0 tabular-nums">{money(m.unit_price)}</b>
                 </li>

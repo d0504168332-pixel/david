@@ -361,21 +361,24 @@ export default function QuoteDocument({ business, author, quote, id }: Props) {
           <div style={{ color: "#57534e", fontSize: 12.5 }}>{[author?.phone, author?.email].filter(Boolean).join(" · ")}</div>
         </div>
         {author && (author.show_signature || author.show_stamp) ? (
-          <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 6, minHeight: 130 }}>
+          // חותמת למעלה, חתימת יד מתחתיה
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 170 }}>
             {author.show_stamp ? (
-              <Stamp
-                businessName={business.name}
-                fullName={author.full_name}
-                jobTitle={author.job_title}
-                taxId={business.show_tax_id ? business.tax_id : null}
-                color={author.stamp_color}
-                shape={author.stamp_shape}
-                size={author.stamp_shape === "round" || author.stamp_shape === "rect" ? 128 : 150}
-              />
+              <div style={{ marginBottom: author.show_signature ? (author.stamp_shape === "round" || author.stamp_shape === "rect" ? -16 : -6) : 0 }}>
+                <Stamp
+                  businessName={business.name}
+                  fullName={author.full_name}
+                  jobTitle={author.job_title}
+                  taxId={business.show_tax_id ? business.tax_id : null}
+                  color={author.stamp_color}
+                  shape={author.stamp_shape}
+                  size={author.stamp_shape === "round" ? 112 : author.stamp_shape === "rect" ? 100 : 140}
+                />
+              </div>
             ) : null}
             {author.show_signature ? (
-              <div style={{ textAlign: "center", marginInlineStart: !author.show_stamp ? 0 : author.stamp_shape === "round" || author.stamp_shape === "rect" ? -22 : 14, position: "relative", zIndex: 1 }}>
-                <Signature name={author.full_name} style={author.signature_style} color={author.signature_color} image={author.signature_image} />
+              <div style={{ textAlign: "center", position: "relative" }}>
+                <Signature name={author.full_name} style={author.signature_style} color={author.signature_color} image={author.signature_image} height={62} />
                 <div style={{ borderTop: "1px solid #a8a29e", fontSize: 11, color: "#78716c", paddingTop: 2, marginTop: 2 }}>חתימה</div>
               </div>
             ) : null}
