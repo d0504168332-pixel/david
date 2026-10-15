@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { requireBusiness } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { calcTotals } from "@/lib/quote";
-import { sendQuoteEvent } from "@/lib/webhook";
+import { onQuoteApproved } from "@/lib/approval";
 import type { QuoteItem, QuoteMeta, QuoteStatus } from "@/lib/types";
 
 export type QuoteInput = {
@@ -102,7 +102,7 @@ export async function saveQuote(input: QuoteInput): Promise<{ id?: string; error
   if (input.id) {
     const { data: before } = await supabase.from("quotes").select("status").eq("id", input.id).maybeSingle();
     const { error } = await supabase.from("quotes").update(row).eq("id", input.id);
-    if (!error && input.status === "approved" && before?.status !== "approved") await sendQuoteEvent(input.id);
+    if (!error && input.status === "approved" && before?.status !== "approved") await onQuoteApproved(input.id);
     if (error) return { error: "השמירה נכשלה: " + error.message };
     revalidatePath("/quotes");
     return { id: input.id };
@@ -117,7 +117,7 @@ export async function saveQuote(input: QuoteInput): Promise<{ id?: string; error
     await supabase.from("quote_requests").update({ status: "quoted", quote_id: data.id }).eq("id", input.request_id);
     revalidatePath("/requests");
   }
-  if (input.status === "approved") await sendQuoteEvent(data.id);
+  if (input.status === "approved") await onQuoteApproved(data.id);
   revalidatePath("/quotes");
   return { id: data.id };
 }
@@ -131,7 +131,7 @@ export async function setQuoteStatus(id: string, status: QuoteStatus) {
   }
   const { data: before } = await supabase.from("quotes").select("status").eq("id", id).maybeSingle();
   await supabase.from("quotes").update(patch).eq("id", id);
-  if (status === "approved" && before?.status !== "approved") await sendQuoteEvent(id);
+  if (status === "approved" && before?.status !== "approved") await onQuoteApproved(id);
   revalidatePath(`/quotes/${id}`);
   revalidatePath("/quotes");
 }
@@ -139,9 +139,9 @@ export async function setQuoteStatus(id: string, status: QuoteStatus) {
 /** שליחה חוזרת ידנית למערכת החיצונית */
 export async function resendWebhook(id: string) {
   await requireBusiness();
-  const r = await sendQuoteEvent(id);
+  await onQuoteApproved(id);
   revalidatePath(`/quotes/${id}`);
-  return r;
+  return { ok: true };
 }
 
 export async function markSent(id: string) {
@@ -196,7 +196,7 @@ export async function approveByToken(token: string, name: string): Promise<{ ok?
     .update({ status: "approved", approved_by_name: n.slice(0, 80), approved_at: new Date().toISOString() })
     .eq("id", q.id);
   if (error) return { error: "האישור נכשל, נסו שוב" };
-  await sendQuoteEvent(q.id);
+  await onQuoteApproved(q.id);
   revalidatePath(`/q/${token}`);
   return { ok: true };
 }

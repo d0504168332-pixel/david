@@ -8,6 +8,7 @@ import QuoteActions from "@/components/QuoteActions";
 import { AUTHOR_COLS, toDocAuthor, toDocBusiness } from "@/lib/doc-data";
 import { STATUS_CLASS, STATUS_LABEL, calcTotals, formatDate, quoteNumber } from "@/lib/quote";
 import type { Profile, Quote } from "@/lib/types";
+import { tripCsv } from "@/lib/trip-export";
 
 export default async function QuoteViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -20,17 +21,24 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ id: 
     author = data as Partial<Profile> | null;
   }
   const num = quoteNumber(business.quote_prefix, quote.number);
-  let sync: { enabled: boolean; ok?: boolean; at?: string; code?: number | null } = { enabled: !!business.webhook_url };
-  if (business.webhook_url) {
+  // סטטוס שליחה אחרי אישור: Webhook ומייל לסדרן
+  const channels: { key: string; label: string }[] = [
+    ...(business.ops_emails ? [{ key: "email.trip", label: `מייל נסיעה ל-${business.ops_emails}` }] : []),
+    ...(business.webhook_url ? [{ key: "quote.approved", label: "מערכת חיצונית (Webhook)" }] : []),
+  ];
+  const sync: { label: string; ok?: boolean; at?: string; code?: number | null }[] = [];
+  for (const ch of channels) {
     const { data: d } = await supabase
       .from("webhook_deliveries")
       .select("ok,created_at,status_code")
       .eq("quote_id", quote.id)
+      .eq("event", ch.key)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (d) sync = { enabled: true, ok: d.ok, at: d.created_at, code: d.status_code };
+    sync.push({ label: ch.label, ok: d?.ok, at: d?.created_at, code: d?.status_code });
   }
+  const csv = quote.meta?.trip ? tripCsv(quote, business) : null;
   const totals = calcTotals(quote);
 
   return (
@@ -69,6 +77,7 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ id: 
             total={totals.total}
             docId="quote-doc"
             sync={sync}
+            tripCsv={csv}
           />
         </div>
       </div>

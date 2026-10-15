@@ -47,6 +47,10 @@ export function businessRowFromForm(form: FormData) {
     show_website: form.get("show_website") === "on",
     request_form_type: form.get("request_form_type") === "transport" ? "transport" : "general",
     request_intro: s(form, "request_intro"),
+    ops_emails: (s(form, "ops_emails") ?? "")
+      .split(/[,;\s]+/)
+      .filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))
+      .join(", ") || null,
     webhook_url: (() => {
       const u = s(form, "webhook_url");
       return u && /^https:\/\/[^\s]+$/i.test(u) ? u : null;

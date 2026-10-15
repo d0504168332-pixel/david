@@ -24,6 +24,7 @@ export type Business = {
   request_intro: string | null;
   webhook_url: string | null;
   webhook_secret: string | null;
+  ops_emails: string | null;
   created_at: string;
 };
 

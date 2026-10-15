@@ -275,3 +275,6 @@ alter table public.businesses add column if not exists inbox_code text not null 
 create unique index if not exists businesses_inbox_code_idx on public.businesses(inbox_code);
 alter table public.quote_requests add column if not exists source text not null default 'form';
 alter table public.quote_requests add column if not exists subject text;
+
+-- ===== שליחת נסיעה מאושרת במייל (לסדרן / ספק / מערכת YIT) =====
+alter table public.businesses add column if not exists ops_emails text;

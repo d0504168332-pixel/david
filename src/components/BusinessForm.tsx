@@ -203,10 +203,13 @@ export default function BusinessForm({
         </section>
 
         <section className="card p-5">
-          <h2 className="mb-1 text-[17px] font-extrabold">חיבור למערכת חיצונית</h2>
+          <h2 className="mb-1 text-[17px] font-extrabold">כשהצעה מאושרת</h2>
           <p className="mb-4 text-sm text-stone-500">
             כשלקוח מאשר הצעה, המערכת שולחת את כל פרטי ההצעה (לקוח, פריטים, סכומים ופרטי נסיעה) לכתובת הזו — למשל כדי לפתוח נסיעה אוטומטית במערכת ההסעות.
           </p>
+          <label className="label" htmlFor="ops_emails">מייל לסידור הנסיעה (סדרן / ספק / מערכת YIT)</label>
+          <input id="ops_emails" name="ops_emails" dir="ltr" defaultValue={business?.ops_emails ?? ""} placeholder="dispatch@company.co.il, manager@company.co.il" className="field text-right" />
+          <p className="mb-4 mt-1.5 text-xs text-stone-500">כשלקוח מאשר הצעה — נשלח לכתובות האלה מייל עם כל פרטי הנסיעה וקובץ מוכן לייבוא. אפשר כמה כתובות, מופרדות בפסיק.</p>
           <label className="label" htmlFor="webhook_url">כתובת קליטה (Webhook URL)</label>
           <input id="webhook_url" name="webhook_url" dir="ltr" defaultValue={business?.webhook_url ?? ""} placeholder="https://..." className="field text-right" />
           {business?.webhook_secret ? (

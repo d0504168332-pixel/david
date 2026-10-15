@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Copy, Download, Mail, MessageCircle, Pencil, Printer, Share2, Trash2, CopyPlus, Check, Link2, RefreshCw, PlugZap } from "lucide-react";
+import { Copy, Download, Mail, MessageCircle, Pencil, Printer, Share2, Trash2, CopyPlus, Check, Link2, RefreshCw, PlugZap, Bus, FileDown } from "lucide-react";
 import { deleteQuote, duplicateQuote, markSent, resendWebhook, setQuoteStatus } from "@/app/actions/quotes";
 import { downloadPdf, pdfFile } from "@/lib/pdf";
 import { STATUS_LABEL, money, toIntlPhone } from "@/lib/quote";
@@ -20,7 +20,8 @@ type Props = {
   clientEmail: string | null;
   total: number;
   docId: string;
-  sync?: { enabled: boolean; ok?: boolean; at?: string; code?: number | null };
+  sync?: { label: string; ok?: boolean; at?: string; code?: number | null }[];
+  tripCsv?: string | null;
 };
 
 export default function QuoteActions(p: Props) {
@@ -135,20 +136,46 @@ export default function QuoteActions(p: Props) {
         </div>
       </div>
 
-      {p.sync?.enabled ? (
+      {p.tripCsv ? (
         <div className="card p-4">
-          <div className="mb-1 flex items-center gap-2 text-sm font-bold text-stone-500">
-            <PlugZap className="size-4" /> סנכרון למערכת החיצונית
+          <div className="mb-2 flex items-center gap-2 text-sm font-bold text-stone-500">
+            <Bus className="size-4" /> הנסיעה
           </div>
-          <div className="text-sm">
-            {!p.sync.at ? (
-              <span className="text-stone-500">יישלח אוטומטית כשההצעה תאושר.</span>
-            ) : p.sync.ok ? (
-              <span className="font-semibold text-emerald-700">נשלח בהצלחה · {new Date(p.sync.at).toLocaleString("he-IL")}</span>
-            ) : (
-              <span className="font-semibold text-rose-700">השליחה נכשלה{p.sync.code ? ` (קוד ${p.sync.code})` : ""} · {new Date(p.sync.at).toLocaleString("he-IL")}</span>
-            )}
+          <button
+            className="btn-ghost w-full"
+            onClick={() => {
+              const url = URL.createObjectURL(new Blob([p.tripCsv!], { type: "text/csv;charset=utf-8" }));
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `trip-${p.number}.csv`;
+              a.click();
+              setTimeout(() => URL.revokeObjectURL(url), 2000);
+            }}
+          >
+            <FileDown className="size-4" /> קובץ נסיעה לייבוא (CSV)
+          </button>
+        </div>
+      ) : null}
+
+      {p.sync?.length ? (
+        <div className="card p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-bold text-stone-500">
+            <PlugZap className="size-4" /> שליחה אוטומטית באישור
           </div>
+          <ul className="space-y-1.5 text-sm">
+            {p.sync.map((s) => (
+              <li key={s.label}>
+                <div className="truncate text-stone-600">{s.label}</div>
+                {!s.at ? (
+                  <div className="text-xs text-stone-400">יישלח כשההצעה תאושר</div>
+                ) : s.ok ? (
+                  <div className="text-xs font-semibold text-emerald-700">נשלח ✓ · {new Date(s.at).toLocaleString("he-IL")}</div>
+                ) : (
+                  <div className="text-xs font-semibold text-rose-700">נכשל{s.code ? ` (${s.code})` : ""} · {new Date(s.at).toLocaleString("he-IL")}</div>
+                )}
+              </li>
+            ))}
+          </ul>
           {p.status === "approved" ? (
             <button className="btn-ghost mt-3 w-full" onClick={() => start(async () => { await resendWebhook(p.id); })}>
               <RefreshCw className="size-4" /> שליחה חוזרת
