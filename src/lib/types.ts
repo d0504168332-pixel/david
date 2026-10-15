@@ -19,6 +19,7 @@ export type Business = {
   show_website: boolean;
   is_active: boolean;
   request_token: string;
+  inbox_code: string;
   request_form_type: "general" | "transport";
   request_intro: string | null;
   webhook_url: string | null;
@@ -129,6 +130,8 @@ export type QuoteRequest = {
   trip: Trip | null;
   notes: string | null;
   quote_id: string | null;
+  source?: "form" | "email";
+  subject?: string | null;
   created_at: string;
 };
 

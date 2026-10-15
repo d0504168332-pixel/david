@@ -269,3 +269,9 @@ alter table public.webhook_deliveries enable row level security;
 drop policy if exists webhook_deliveries_select on public.webhook_deliveries;
 create policy webhook_deliveries_select on public.webhook_deliveries for select to authenticated
   using (business_id = public.my_business_id() or public.is_super_admin());
+
+-- ===== קליטת בקשות במייל =====
+alter table public.businesses add column if not exists inbox_code text not null default substr(md5(random()::text || clock_timestamp()::text), 1, 10);
+create unique index if not exists businesses_inbox_code_idx on public.businesses(inbox_code);
+alter table public.quote_requests add column if not exists source text not null default 'form';
+alter table public.quote_requests add column if not exists subject text;

@@ -37,3 +37,19 @@ if (sig !== req.headers["x-quotecraft-signature"]) return res.status(401).end();
 
 ## כל שליחה נרשמת
 טבלת `webhook_deliveries` (קוד תשובה, הצלחה/כישלון). בדף ההצעה מוצג הסטטוס, ויש כפתור "שליחה חוזרת".
+
+# קליטת בקשות במייל
+
+לכל עסק כתובת מייל ייחודית. כל מייל שמגיע אליה נכנס ל"בקשות מלקוחות" — עם השולח, הנושא, התוכן והפריטים שזוהו.
+
+## הקמה (פעם אחת, ע״י מנהל המערכת) — Postmark Inbound, בלי צורך בדומיין
+1. חשבון ב-postmarkapp.com ← Server ← **Inbound stream**. מקבלים כתובת בסגנון `abc123@inbound.postmarkapp.com`.
+2. ב-Inbound ← Settings ← **Webhook URL**: `https://<האתר>/api/inbound-email?key=<INBOUND_EMAIL_SECRET>`
+3. ב-Vercel: `INBOUND_EMAIL_ADDRESS=abc123@inbound.postmarkapp.com` ו-`INBOUND_EMAIL_SECRET=<מחרוזת אקראית ארוכה>`.
+4. הכתובת של כל עסק נוצרת אוטומטית: `abc123+<קוד העסק>@inbound.postmarkapp.com` ומוצגת בדף "בקשות מלקוחות".
+
+חלופה עם דומיין משלכם (למשל `quotes@your-company.co.il`): Cloudflare Email Routing + Email Worker שמעביר ל-`/api/inbound-email` בפורמט `{ from, from_name, to, subject, text }`. במקרה זה `INBOUND_EMAIL_ADDRESS={code}@in.your-domain.co.il`.
+
+## מצד העסק
+- לתת ללקוחות את הכתובת ישירות, **או**
+- להשאיר את המייל הקיים ולהגדיר בו **העברה אוטומטית** (Gmail: הגדרות ← העברה; או מסנן "נושא מכיל: הצעת מחיר" ← העבר אל). מייל האישור של Gmail יופיע ב"בקשות מלקוחות" — פותחים אותו ולוחצים על קישור האישור.

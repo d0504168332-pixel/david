@@ -5,6 +5,7 @@ import { requireBusiness } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
 import RequestCard from "./RequestCard";
 import ShareRequestLink from "./ShareRequestLink";
+import { inboxAddress } from "@/lib/inbox";
 import type { QuoteRequest } from "@/lib/types";
 
 type SP = Promise<{ status?: string }>;
@@ -31,8 +32,8 @@ export default async function RequestsPage({ searchParams }: { searchParams: SP 
   const tabs: [string, string][] = [["new", "חדשות"], ["quoted", "נשלחה הצעה"], ["closed", "סגורות"]];
   return (
     <>
-      <PageHeader title="בקשות מלקוחות" subtitle="לקוחות ממלאים טופס בקישור שלכם — הבקשה מגיעה לכאן, ומכאן הופכת להצעה בלחיצה" />
-      <ShareRequestLink link={link} businessName={business.name} />
+      <PageHeader title="בקשות מלקוחות" subtitle="בקשות מהטופס ומהמייל מגיעות לכאן — ומכאן הופכות להצעה בלחיצה" />
+      <ShareRequestLink link={link} businessName={business.name} email={inboxAddress(business.inbox_code)} />
       <div className="mb-4 mt-6 flex flex-wrap gap-2">
         {tabs.map(([k, label]) => (
           <Link
