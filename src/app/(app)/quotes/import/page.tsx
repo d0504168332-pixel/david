@@ -10,7 +10,7 @@ export default async function ImportPage() {
   const history = await loadPriceHistory(supabase, business.id);
   return (
     <>
-      <PageHeader title="ממייל להצעת מחיר" subtitle="מדביקים את מייל הבקשה — ההצעה נבנית לבד, נשאר רק להוסיף מחירים" />
+      <PageHeader title="ממייל להצעת מחיר" subtitle="מדביקים מייל או הודעה של לקוח — כל בקשה הופכת לשורה מסודרת, נשאר רק להכניס מחיר" />
       <ImportFlow
         business={toDocBusiness(business)}
         author={toDocAuthor(profile)}

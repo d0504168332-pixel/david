@@ -77,7 +77,7 @@ export default function ImportFlow({ aiEnabled, ...editor }: Omit<EditorProps, "
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="card p-5">
         <div className="mb-2 flex items-center justify-between">
-          <label className="label mb-0" htmlFor="email-text">תוכן המייל</label>
+          <label className="label mb-0" htmlFor="email-text">הטקסט של הבקשה</label>
           <button
             type="button"
             className="flex items-center gap-1 text-sm font-semibold text-brand hover:underline"
@@ -93,7 +93,7 @@ export default function ImportFlow({ aiEnabled, ...editor }: Omit<EditorProps, "
         <textarea
           id="email-text"
           className="field min-h-[22rem] font-[inherit] leading-relaxed"
-          placeholder="העתיקו את כל המייל (כולל החתימה והפרטים של השולח) והדביקו כאן"
+          placeholder="הדביקו כאן מייל, הודעת וואטסאפ או כל טקסט של בקשה. לדוגמה: הלקוח רוצה 10 כרטיסי ביקור ו-2 באנרים"
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
