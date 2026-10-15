@@ -33,7 +33,7 @@ export default function Stamp({
       <feColorMatrix
         in="noise"
         type="matrix"
-        values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.6 1.25"
+        values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -0.85 1.32"
         result="mask"
       />
       <feComposite in="SourceGraphic" in2="mask" operator="in" result="speckled" />

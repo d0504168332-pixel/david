@@ -19,6 +19,13 @@ async function renderPdf(node: HTMLElement) {
   const pageW = 210;
   const pageH = 297;
   const imgH = (img.height * pageW) / img.width;
+  if (imgH <= pageH * 1.18) {
+    // חריגה קטנה — מקטינים מעט כדי שהכל ייכנס בעמוד אחד
+    const h = Math.min(imgH, pageH);
+    const w = (pageW * h) / imgH;
+    pdf.addImage(dataUrl, "PNG", (pageW - w) / 2, 0, w, h, undefined, "FAST");
+    return pdf;
+  }
   let offset = 0;
   pdf.addImage(dataUrl, "PNG", 0, 0, pageW, imgH, undefined, "FAST");
   offset += pageH;

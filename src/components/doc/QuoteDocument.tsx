@@ -56,7 +56,7 @@ function hexToRgba(hex: string, a: number) {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
-function Logo({ url, name, size = 64, light = false }: { url: string | null; name: string; size?: number; light?: boolean }) {
+function Logo({ url, name, size = 64, light = false, bg = "#1f3a5f" }: { url: string | null; name: string; size?: number; light?: boolean; bg?: string }) {
   if (url) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={url} alt={name} crossOrigin="anonymous" style={{ maxHeight: size, maxWidth: size * 2.6, objectFit: "contain" }} />;
@@ -72,8 +72,8 @@ function Logo({ url, name, size = 64, light = false }: { url: string | null; nam
         placeItems: "center",
         fontWeight: 800,
         fontSize: size / 2.6,
-        background: light ? "rgba(255,255,255,.16)" : "currentColor",
-        color: light ? "#fff" : "#fff",
+        background: light ? "rgba(255,255,255,.16)" : bg,
+        color: "#fff",
         border: light ? "1.5px solid rgba(255,255,255,.5)" : "none",
       }}
     >
@@ -150,9 +150,9 @@ export default function QuoteDocument({ business, author, quote, id }: Props) {
     );
   } else if (t === "classic") {
     header = (
-      <div style={{ padding: "44px 56px 18px", textAlign: "center" }}>
+      <div style={{ padding: "34px 56px 6px", textAlign: "center" }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 10, color: primary }}>
-          <Logo url={business.logo_url} name={business.name} size={72} />
+          <Logo url={business.logo_url} name={business.name} size={60} bg={primary} />
         </div>
         <div style={{ fontSize: 28, fontWeight: 700, color: primary }}>{business.name}</div>
         {business.show_tax_id && business.tax_id ? (
@@ -160,7 +160,7 @@ export default function QuoteDocument({ business, author, quote, id }: Props) {
         ) : null}
         <div style={{ marginTop: 16, borderTop: `2px solid ${primary}`, borderBottom: `1px solid ${primary}`, height: 4 }} />
         <div style={{ fontSize: 13, color: "#57534e", marginTop: 8 }}>{contactLine.join("  ·  ")}</div>
-        <div style={{ fontSize: 30, fontWeight: 700, marginTop: 22, letterSpacing: 2, color: "#1c1917" }}>הצעת מחיר</div>
+        <div style={{ fontSize: 28, fontWeight: 700, marginTop: 14, letterSpacing: 2, color: "#1c1917" }}>הצעת מחיר</div>
         <div style={{ width: 60, height: 2, background: accent, margin: "8px auto 0" }} />
       </div>
     );
@@ -169,7 +169,7 @@ export default function QuoteDocument({ business, author, quote, id }: Props) {
       <div style={{ padding: "52px 56px 10px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div style={{ color: primary }}>
-            <Logo url={business.logo_url} name={business.name} size={54} />
+            <Logo url={business.logo_url} name={business.name} size={54} bg={primary} />
             <div style={{ fontSize: 18, fontWeight: 700, marginTop: 10, color: "#1c1917" }}>{business.name}</div>
             <div style={{ fontSize: 12, color: "#78716c", maxWidth: 300 }}>{contactLine.join(" · ")}</div>
           </div>
@@ -187,7 +187,7 @@ export default function QuoteDocument({ business, author, quote, id }: Props) {
       <div style={{ padding: "0 56px 0 0", display: "flex", alignItems: "stretch" }}>
         <div style={{ flex: 1, padding: "44px 0 20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16, color: primary }}>
-            <Logo url={business.logo_url} name={business.name} size={60} />
+            <Logo url={business.logo_url} name={business.name} size={60} bg={primary} />
             <div>
               <div style={{ fontSize: 22, fontWeight: 900, color: "#1c1917" }}>{business.name}</div>
               <div style={{ fontSize: 12, color: "#78716c" }}>{contactLine.slice(0, 2).join(" · ")}</div>
@@ -374,7 +374,7 @@ export default function QuoteDocument({ business, author, quote, id }: Props) {
               />
             ) : null}
             {author.show_signature ? (
-              <div style={{ textAlign: "center", marginInlineStart: author.show_stamp ? -40 : 0, position: "relative", zIndex: 1 }}>
+              <div style={{ textAlign: "center", marginInlineStart: author.show_stamp ? -22 : 0, position: "relative", zIndex: 1 }}>
                 <Signature name={author.full_name} style={author.signature_style} color={author.signature_color} image={author.signature_image} />
                 <div style={{ borderTop: "1px solid #a8a29e", fontSize: 11, color: "#78716c", paddingTop: 2, marginTop: 2 }}>חתימה</div>
               </div>
