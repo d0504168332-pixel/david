@@ -47,7 +47,7 @@ export default function ClientsManager({ clients, quoteCounts }: { clients: Clie
             <div key={c.id} className="card p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="truncate text-[16px] font-extrabold">{c.name}</div>
+                  <Link href={`/clients/${c.id}`} className="block truncate text-[16px] font-extrabold hover:text-brand hover:underline">{c.name}</Link>
                   {c.contact_name ? <div className="text-sm text-stone-600">{c.contact_name}</div> : null}
                   <div className="mt-1 truncate text-sm text-stone-500" dir="ltr" style={{ textAlign: "right" }}>
                     {[c.phone, c.email].filter(Boolean).join(" · ")}
@@ -59,6 +59,7 @@ export default function ClientsManager({ clients, quoteCounts }: { clients: Clie
                 <Link href={`/quotes/new?client=${c.id}`} className="btn-primary px-3 py-2 text-sm">
                   <FilePlus2 className="size-4" /> הצעה
                 </Link>
+                <Link href={`/clients/${c.id}`} className="btn-ghost px-3 py-2 text-sm">היסטוריה</Link>
                 <button className="btn-ghost px-3 py-2 text-sm" onClick={() => setEditing(c)}>
                   <Pencil className="size-4" /> עריכה
                 </button>

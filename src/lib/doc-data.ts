@@ -40,3 +40,32 @@ export function toDocAuthor(p: Partial<Profile> | null) {
     show_stamp: p.show_stamp ?? true,
   };
 }
+
+import type { PastPrice } from "./price-check";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function loadPriceHistory(supabase: any, businessId: string, excludeId?: string): Promise<PastPrice[]> {
+  let q = supabase
+    .from("quotes")
+    .select("id,number,client_name,issue_date,items")
+    .eq("business_id", businessId)
+    .order("issue_date", { ascending: false })
+    .limit(400);
+  if (excludeId) q = q.neq("id", excludeId);
+  const { data } = await q;
+  const out: PastPrice[] = [];
+  for (const row of data ?? []) {
+    for (const it of (row.items ?? []) as { description?: string; unit_price?: number }[]) {
+      if (it.description && Number(it.unit_price) > 0)
+        out.push({
+          quote_id: row.id,
+          number: row.number,
+          client_name: row.client_name,
+          issue_date: row.issue_date,
+          description: it.description,
+          unit_price: Number(it.unit_price),
+        });
+    }
+  }
+  return out;
+}

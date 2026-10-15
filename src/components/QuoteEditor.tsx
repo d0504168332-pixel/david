@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, Eye, PencilLine, Plus, Save, Trash2, AlignRight } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, PencilLine, Plus, Save, Trash2, AlignRight, TriangleAlert, TrendingUp, TrendingDown, History } from "lucide-react";
+import { checkPrice, type PastPrice } from "@/lib/price-check";
 import QuoteDocument, { type DocAuthor, type DocBusiness } from "@/components/doc/QuoteDocument";
 import DocPreview from "@/components/doc/DocPreview";
 import { saveQuote, type QuoteInput } from "@/app/actions/quotes";
@@ -13,10 +14,11 @@ type Props = {
   business: DocBusiness & { vat_rate: number; default_notes: string | null; default_terms: string | null };
   author: DocAuthor | null;
   clients: Client[];
+  history?: PastPrice[];
   initial?: Quote | null;
 };
 
-export default function QuoteEditor({ business, author, clients, initial }: Props) {
+export default function QuoteEditor({ business, author, clients, initial, history = [] }: Props) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +64,13 @@ export default function QuoteEditor({ business, author, clients, initial }: Prop
     });
 
   const totals = useMemo(() => calcTotals(q), [q]);
+  const priceChecks = useMemo(
+    () => Object.fromEntries(q.items.map((it) => [it.id, checkPrice(it.description, Number(it.unit_price), history)])),
+    [q.items, history]
+  );
+  const alertCount = Object.values(priceChecks).filter((c) => c?.alert).length;
+  const [ackAlerts, setAckAlerts] = useState(false);
+  useEffect(() => setAckAlerts(false), [alertCount]);
 
   const pickClient = (id: string) => {
     if (!id) {
@@ -85,6 +94,11 @@ export default function QuoteEditor({ business, author, clients, initial }: Prop
 
   const onSave = () => {
     setError(null);
+    if (alertCount > 0 && !ackAlerts) {
+      setAckAlerts(true);
+      setError(`שים לב: ${alertCount === 1 ? "פריט אחד" : `${alertCount} פריטים`} במחיר שונה מהצעות קודמות. לחץ שוב כדי לשמור בכל זאת.`);
+      return;
+    }
     start(async () => {
       const res = await saveQuote(q);
       if (res.error) {
@@ -218,6 +232,7 @@ export default function QuoteEditor({ business, author, clients, initial }: Prop
                           <div className="field bg-stone-100/70 font-bold tabular-nums">{money((Number(it.quantity) || 0) * (Number(it.unit_price) || 0))}</div>
                         </div>
                       </div>
+                      <PriceHint check={priceChecks[it.id]} prefix={business.quote_prefix} clientName={q.client_name} onUse={(price) => setItem(it.id, { unit_price: price })} />
                     </div>
                     <div className="flex shrink-0 flex-col gap-1">
                       <IconBtn title="פירוט" onClick={() => setOpenDetails((p) => ({ ...p, [it.id]: !p[it.id] }))}>
@@ -305,13 +320,19 @@ export default function QuoteEditor({ business, author, clients, initial }: Prop
       <div className="no-print sticky bottom-20 z-20 mt-6 lg:bottom-4">
         <div className="card flex items-center justify-between gap-3 p-3 shadow-lg">
           <div className="min-w-0 text-sm">
-            {error ? <span className="font-semibold text-rose-600">{error}</span> : <span className="text-stone-500">סה״כ: <b className="text-ink tabular-nums">{money(totals.total)}</b></span>}
+            {error ? (
+              <span className={`font-semibold ${ackAlerts && alertCount ? "text-amber-700" : "text-rose-600"}`}>{error}</span>
+            ) : alertCount ? (
+              <span className="flex items-center gap-1.5 font-semibold text-amber-700">
+                <TriangleAlert className="size-4 shrink-0" /> {alertCount} פערי מחיר מול הצעות קודמות
+              </span>
+            ) : <span className="text-stone-500">סה״כ: <b className="text-ink tabular-nums">{money(totals.total)}</b></span>}
           </div>
           <div className="flex gap-2">
             <button type="button" className="btn-ghost" onClick={() => router.back()}>ביטול</button>
             <button type="button" className="btn-primary" onClick={onSave} disabled={pending}>
               {pending ? <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Save className="size-4" />}
-              שמירה והמשך
+              {ackAlerts && alertCount ? "לשמור בכל זאת" : "שמירה והמשך"}
             </button>
           </div>
         </div>
@@ -362,6 +383,63 @@ function Line({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between text-stone-600">
       <span>{label}</span>
       <span className="tabular-nums">{value}</span>
+    </div>
+  );
+}
+
+type Check = ReturnType<typeof checkPrice>;
+
+function PriceHint({ check, prefix, clientName, onUse }: { check: Check; prefix: string; clientName: string; onUse: (price: number) => void }) {
+  const [open, setOpen] = useState(false);
+  if (!check) return null;
+  const { last, avg, alert, matches } = check;
+  const up = last.diffPct > 0;
+  const sameClient = clientName.trim() && last.client_name.trim() === clientName.trim();
+  const ref = `${prefix ?? ""}${last.number ?? ""}`;
+  const date = new Date(last.issue_date + "T00:00:00").toLocaleDateString("he-IL");
+  if (!alert) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-stone-500">
+        <History className="size-3.5" /> תואם למחיר בהצעה {ref} ({money(last.unit_price)})
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-xl border border-amber-300 bg-amber-50 p-2.5 text-[13px] text-amber-900">
+      <div className="flex items-start gap-2">
+        {up ? <TrendingUp className="mt-0.5 size-4 shrink-0" /> : <TrendingDown className="mt-0.5 size-4 shrink-0" />}
+        <div className="min-w-0 flex-1">
+          <div className="font-bold">
+            פער של {Math.abs(last.diffPct).toFixed(0)}% {up ? "מעל" : "מתחת"} להצעה קודמת דומה
+          </div>
+          <div>
+            בהצעה {ref} {sameClient ? "ללקוח הזה" : `ל${last.client_name}`} ({date}) המחיר היה <b>{money(last.unit_price)}</b>
+            {matches.length > 1 ? <> · ממוצע {matches.length} הצעות: <b>{money(avg)}</b></> : null}
+          </div>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            <button type="button" onClick={() => onUse(last.unit_price)} className="rounded-md bg-white px-2 py-0.5 text-xs font-bold ring-1 ring-amber-300 hover:bg-amber-100">
+              להשתמש ב-{money(last.unit_price)}
+            </button>
+            {matches.length > 1 ? (
+              <button type="button" onClick={() => setOpen((o) => !o)} className="rounded-md px-2 py-0.5 text-xs font-bold underline">
+                {open ? "הסתרה" : "כל ההיסטוריה"}
+              </button>
+            ) : null}
+          </div>
+          {open ? (
+            <ul className="mt-2 space-y-0.5 text-xs">
+              {matches.map((m, i) => (
+                <li key={i} className="flex justify-between gap-2">
+                  <span className="truncate">
+                    {prefix}{m.number} · {m.client_name} · {new Date(m.issue_date + "T00:00:00").toLocaleDateString("he-IL")} · "{m.description}"
+                  </span>
+                  <b className="shrink-0 tabular-nums">{money(m.unit_price)}</b>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
