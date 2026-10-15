@@ -15,10 +15,11 @@ type Props = {
   author: DocAuthor | null;
   clients: Client[];
   history?: PastPrice[];
+  priceSources?: Record<string, string>;
   initial?: Quote | null;
 };
 
-export default function QuoteEditor({ business, author, clients, initial, history = [] }: Props) {
+export default function QuoteEditor({ business, author, clients, initial, history = [], priceSources = {} }: Props) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -224,14 +225,28 @@ export default function QuoteEditor({ business, author, clients, initial, histor
                           <input type="number" inputMode="decimal" min={0} step="any" className="field" value={it.quantity} onChange={(e) => setItem(it.id, { quantity: e.target.valueAsNumber || 0 })} />
                         </div>
                         <div>
-                          <label className="text-[11.5px] font-semibold text-stone-500">מחיר ליחידה ₪</label>
-                          <input type="number" inputMode="decimal" min={0} step="any" className="field" value={it.unit_price} onChange={(e) => setItem(it.id, { unit_price: e.target.valueAsNumber || 0 })} />
+                          <label className={`text-[11.5px] font-semibold ${!Number(it.unit_price) ? "text-amber-700" : "text-stone-500"}`}>
+                            {!Number(it.unit_price) ? "הזן מחיר ₪" : "מחיר ליחידה ₪"}
+                          </label>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min={0}
+                            step="any"
+                            className={`field ${!Number(it.unit_price) ? "border-amber-400 bg-amber-50/60 ring-4 ring-amber-100" : ""}`}
+                            value={it.unit_price || ""}
+                            placeholder="0"
+                            onChange={(e) => setItem(it.id, { unit_price: e.target.valueAsNumber || 0 })}
+                          />
                         </div>
                         <div>
                           <label className="text-[11.5px] font-semibold text-stone-500">סה״כ</label>
                           <div className="field bg-stone-100/70 font-bold tabular-nums">{money((Number(it.quantity) || 0) * (Number(it.unit_price) || 0))}</div>
                         </div>
                       </div>
+                      {priceSources[it.id] && Number(it.unit_price) ? (
+                        <div className="text-xs text-sky-700">מחיר הוצע אוטומטית לפי הצעה {priceSources[it.id]}</div>
+                      ) : null}
                       <PriceHint check={priceChecks[it.id]} prefix={business.quote_prefix} clientName={q.client_name} onUse={(price) => setItem(it.id, { unit_price: price })} />
                     </div>
                     <div className="flex shrink-0 flex-col gap-1">

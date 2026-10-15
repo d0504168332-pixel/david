@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, FileText, Search } from "lucide-react";
+import { Plus, FileText, Search, MailPlus } from "lucide-react";
 import { requireBusiness } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
 import { STATUS_CLASS, STATUS_LABEL, formatDate, money, quoteNumber } from "@/lib/quote";
@@ -64,9 +64,14 @@ export default async function QuotesPage({ searchParams }: { searchParams: SP })
         title="הצעות מחיר"
         subtitle={`שלום ${profile.full_name.split(" ")[0] || ""}`}
         actions={
-          <Link href="/quotes/new" className="btn-primary">
-            <Plus className="size-4" /> הצעה חדשה
-          </Link>
+          <>
+            <Link href="/quotes/import" className="btn-ghost">
+              <MailPlus className="size-4" /> ממייל להצעה
+            </Link>
+            <Link href="/quotes/new" className="btn-primary">
+              <Plus className="size-4" /> הצעה חדשה
+            </Link>
+          </>
         }
       />
 
