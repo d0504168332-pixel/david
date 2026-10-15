@@ -107,4 +107,4 @@ export type QuoteForDoc = Pick<
   | "status"
   | "approved_by_name"
   | "approved_at"
->;
+> & { meta?: import("./types").QuoteMeta | null };

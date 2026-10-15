@@ -253,6 +253,35 @@ export default function QuoteDocument({ business, author, quote, id }: Props) {
         </div>
       </div>
 
+      {quote.meta?.trip && (quote.meta.trip.origin || quote.meta.trip.destination) ? (
+        <div style={{ padding: sectionPad, marginTop: 18 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              border: `1px solid ${hexToRgba(primary, 0.18)}`,
+              borderRadius: t === "classic" ? 0 : 12,
+              overflow: "hidden",
+            }}
+          >
+            {(
+              [
+                ["מסלול", `${quote.meta.trip.origin ?? ""} ← ${quote.meta.trip.destination ?? ""}`, 2],
+                ["תאריך ושעה", [quote.meta.trip.date && formatDate(quote.meta.trip.date), quote.meta.trip.time].filter(Boolean).join(" · ") || "—", 1],
+                ["נוסעים", quote.meta.trip.passengers ? String(quote.meta.trip.passengers) : "—", 1],
+                ["סוג נסיעה", quote.meta.trip.round_trip ? `הלוך-חזור${quote.meta.trip.return_time ? ` (חזור ${quote.meta.trip.return_time})` : ""}` : "כיוון אחד", 2],
+                ["עצירות", quote.meta.trip.stops || "—", 2],
+              ] as [string, string, number][]
+            ).map(([k, v, span], i) => (
+              <div key={k} style={{ gridColumn: `span ${span}`, padding: "9px 14px", background: i === 0 ? hexToRgba(primary, 0.06) : "transparent", borderTop: i > 2 ? `1px solid ${hexToRgba(primary, 0.12)}` : undefined, borderInlineStart: i === 1 || i === 2 || i === 4 ? `1px solid ${hexToRgba(primary, 0.12)}` : undefined }}>
+                <div style={{ fontSize: 11, color: "#78716c", fontWeight: 600 }}>{k}</div>
+                <div style={{ fontWeight: 700, fontSize: i === 0 ? 14.5 : 13.5 }}>{v}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {quote.title ? (
         <div style={{ padding: sectionPad, marginTop: 22, fontSize: 15.5 }}>
           <span style={{ fontWeight: 800 }}>הנדון: </span>

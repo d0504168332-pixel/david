@@ -45,6 +45,12 @@ export function businessRowFromForm(form: FormData) {
     quote_start_number: Number.isInteger(start) && start > 0 ? start : 1001,
     show_tax_id: form.get("show_tax_id") === "on",
     show_website: form.get("show_website") === "on",
+    request_form_type: form.get("request_form_type") === "transport" ? "transport" : "general",
+    request_intro: s(form, "request_intro"),
+    webhook_url: (() => {
+      const u = s(form, "webhook_url");
+      return u && /^https:\/\/[^\s]+$/i.test(u) ? u : null;
+    })(),
   };
 }
 

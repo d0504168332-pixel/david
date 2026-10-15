@@ -2,16 +2,16 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, Eye, PencilLine, Plus, Save, Trash2, AlignRight, TriangleAlert, TrendingUp, TrendingDown, History } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, PencilLine, Plus, Save, Trash2, AlignRight, TriangleAlert, TrendingUp, TrendingDown, History, Bus } from "lucide-react";
 import { checkPrice, sameClientHistory, type PastPrice } from "@/lib/price-check";
 import QuoteDocument, { type DocAuthor, type DocBusiness } from "@/components/doc/QuoteDocument";
 import DocPreview from "@/components/doc/DocPreview";
 import { saveQuote, type QuoteInput } from "@/app/actions/quotes";
 import { addDays, calcTotals, money, newItem, todayStr, STATUS_LABEL } from "@/lib/quote";
-import type { Client, Quote, QuoteItem, QuoteStatus } from "@/lib/types";
+import type { Client, Quote, QuoteItem, QuoteStatus, Trip } from "@/lib/types";
 
 type Props = {
-  business: DocBusiness & { vat_rate: number; default_notes: string | null; default_terms: string | null };
+  business: DocBusiness & { vat_rate: number; default_notes: string | null; default_terms: string | null; request_form_type?: string };
   author: DocAuthor | null;
   clients: Client[];
   history?: PastPrice[];
@@ -47,6 +47,8 @@ export default function QuoteEditor({ business, author, clients, initial, histor
     vat_rate: initial?.vat_rate ?? business.vat_rate ?? 18,
     notes: initial?.notes ?? business.default_notes ?? "",
     terms: initial?.terms ?? business.default_terms ?? "",
+    meta: initial?.meta ?? (business.request_form_type === "transport" ? { trip: {} } : {}),
+    request_id: (initial as { request_id?: string | null } | null | undefined)?.request_id ?? null,
   }));
   const [openDetails, setOpenDetails] = useState<Record<string, boolean>>(() =>
     Object.fromEntries((initial?.items ?? []).filter((i) => i.details).map((i) => [i.id, true]))
@@ -128,6 +130,7 @@ export default function QuoteEditor({ business, author, clients, initial, histor
     terms: q.terms || null,
     approved_by_name: initial?.approved_by_name ?? null,
     approved_at: initial?.approved_at ?? null,
+    meta: q.meta,
   };
 
   return (
@@ -211,6 +214,18 @@ export default function QuoteEditor({ business, author, clients, initial, histor
               </div>
             </div>
           </Section>
+
+          {q.meta?.trip ? (
+            <Section title="פרטי הנסיעה" step={<Bus className="size-4" />}>
+              <TripFields trip={q.meta.trip} onChange={(trip) => set("meta", { ...q.meta, trip })} />
+              <label className="mt-3 flex items-center gap-2 text-sm font-semibold text-stone-500">
+                <input type="checkbox" className="size-4" checked={false} onChange={() => set("meta", { ...q.meta, trip: null })} />
+                ללא פרטי נסיעה בהצעה הזו
+              </label>
+            </Section>
+          ) : business.request_form_type === "transport" ? (
+            <button type="button" className="btn-ghost w-full" onClick={() => set("meta", { ...q.meta, trip: {} })}>+ הוספת פרטי נסיעה</button>
+          ) : null}
 
           <Section title="פריטים ושירותים" step={3}>
             <div className="space-y-3">
@@ -360,7 +375,7 @@ export default function QuoteEditor({ business, author, clients, initial, histor
   );
 }
 
-function Section({ title, step, children }: { title: string; step: number; children: React.ReactNode }) {
+function Section({ title, step, children }: { title: string; step: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="card p-5">
       <h2 className="mb-4 flex items-center gap-2.5 text-[17px] font-extrabold">
@@ -458,6 +473,46 @@ function PriceHint({ check, prefix, clientName, onUse }: { check: Check; prefix:
           ) : null}
         </div>
       </div>
+    </div>
+  );
+}
+
+function TripFields({ trip, onChange }: { trip: Trip; onChange: (t: Trip) => void }) {
+  const set = (k: keyof Trip, v: string | number | boolean | undefined) => onChange({ ...trip, [k]: v });
+  const F = ({ k, label, type = "text" }: { k: keyof Trip; label: string; type?: string }) => (
+    <div>
+      <label className="label">{label}</label>
+      <input
+        type={type}
+        className="field"
+        value={(trip[k] as string | number | undefined) ?? ""}
+        onChange={(e) => set(k, type === "number" ? (e.target.value ? Number(e.target.value) : undefined) : e.target.value)}
+      />
+    </div>
+  );
+  return (
+    <div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {F({ k: "origin", label: "נקודת יציאה" })}
+        {F({ k: "destination", label: "יעד" })}
+        {F({ k: "date", label: "תאריך", type: "date" })}
+        {F({ k: "time", label: "שעת יציאה", type: "time" })}
+        {F({ k: "passengers", label: "מספר נוסעים", type: "number" })}
+        {F({ k: "stops", label: "עצירות" })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-4">
+        <label className="flex items-center gap-2 text-sm font-semibold text-stone-700">
+          <input type="checkbox" className="size-4 accent-[var(--brand)]" checked={!!trip.round_trip} onChange={(e) => set("round_trip", e.target.checked)} />
+          הלוך-חזור
+        </label>
+        {trip.round_trip ? (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-stone-500">שעת חזור</span>
+            <input type="time" className="field w-32" value={trip.return_time ?? ""} onChange={(e) => set("return_time", e.target.value)} />
+          </div>
+        ) : null}
+      </div>
+      <p className="mt-2 text-xs text-stone-500">פרטים אלה מופיעים בהצעה, ונשלחים אוטומטית למערכת ההסעות כשהלקוח מאשר.</p>
     </div>
   );
 }

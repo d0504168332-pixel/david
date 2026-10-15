@@ -53,6 +53,7 @@ export default function BusinessForm({
   });
   const [logoPreview, setLogoPreview] = useState<string | null>(business?.logo_url ?? null);
   const [removeLogo, setRemoveLogo] = useState(false);
+  const [formType, setFormType] = useState<"general" | "transport">((business?.request_form_type as "general" | "transport") ?? "general");
   const set = (k: keyof typeof v, val: string | boolean) => setV((p) => ({ ...p, [k]: val }));
 
   const today = todayStr();
@@ -177,6 +178,43 @@ export default function BusinessForm({
             <ColorPick label="צבע ראשי" name="primary_color" value={v.primary_color} onChange={(x) => set("primary_color", x)} options={PALETTE} />
             <ColorPick label="צבע הדגשה" name="accent_color" value={v.accent_color} onChange={(x) => set("accent_color", x)} options={ACCENTS} />
           </div>
+        </section>
+
+        <section className="card p-5">
+          <h2 className="mb-1 text-[17px] font-extrabold">טופס בקשה ללקוחות</h2>
+          <p className="mb-4 text-sm text-stone-500">הלקוח ממלא בקישור מה הוא צריך, והבקשה מגיעה ל"בקשות מלקוחות".</p>
+          <label className="label">סוג הטופס</label>
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            {(
+              [
+                ["general", "כללי", "מוצרים ושירותים + כמויות"],
+                ["transport", "הסעות", "מוצא, יעד, תאריך, שעה ונוסעים"],
+              ] as const
+            ).map(([id, label, desc]) => (
+              <label key={id} className={`cursor-pointer rounded-xl border-2 p-3 transition ${formType === id ? "border-brand bg-brand/5" : "border-stone-200"}`}>
+                <input type="radio" name="request_form_type" value={id} checked={formType === id} onChange={() => setFormType(id)} className="sr-only" />
+                <div className="font-bold">{label}</div>
+                <div className="text-xs text-stone-500">{desc}</div>
+              </label>
+            ))}
+          </div>
+          <label className="label" htmlFor="request_intro">טקסט פתיחה בטופס</label>
+          <textarea id="request_intro" name="request_intro" defaultValue={business?.request_intro ?? ""} placeholder="מלאו את הפרטים ונחזור אליכם עם הצעת מחיר מסודרת." className="field min-h-16" />
+        </section>
+
+        <section className="card p-5">
+          <h2 className="mb-1 text-[17px] font-extrabold">חיבור למערכת חיצונית</h2>
+          <p className="mb-4 text-sm text-stone-500">
+            כשלקוח מאשר הצעה, המערכת שולחת את כל פרטי ההצעה (לקוח, פריטים, סכומים ופרטי נסיעה) לכתובת הזו — למשל כדי לפתוח נסיעה אוטומטית במערכת ההסעות.
+          </p>
+          <label className="label" htmlFor="webhook_url">כתובת קליטה (Webhook URL)</label>
+          <input id="webhook_url" name="webhook_url" dir="ltr" defaultValue={business?.webhook_url ?? ""} placeholder="https://..." className="field text-right" />
+          {business?.webhook_secret ? (
+            <div className="mt-3 text-xs text-stone-500">
+              מפתח חתימה לאימות (נשלח בכותרת X-QuoteCraft-Signature):{" "}
+              <code dir="ltr" className="rounded bg-stone-100 px-1.5 py-0.5 font-mono text-stone-700">{business.webhook_secret}</code>
+            </div>
+          ) : null}
         </section>
 
         <section className="card p-5">

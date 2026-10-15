@@ -18,6 +18,11 @@ export type Business = {
   show_tax_id: boolean;
   show_website: boolean;
   is_active: boolean;
+  request_token: string;
+  request_form_type: "general" | "transport";
+  request_intro: string | null;
+  webhook_url: string | null;
+  webhook_secret: string | null;
   created_at: string;
 };
 
@@ -92,8 +97,39 @@ export type Quote = {
   share_token: string;
   approved_by_name: string | null;
   approved_at: string | null;
+  meta: QuoteMeta;
+  request_id: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type Trip = {
+  date?: string;
+  time?: string;
+  origin?: string;
+  destination?: string;
+  passengers?: number;
+  round_trip?: boolean;
+  return_time?: string;
+  stops?: string;
+};
+
+export type QuoteMeta = { trip?: Trip | null };
+
+export type QuoteRequest = {
+  id: string;
+  business_id: string;
+  status: "new" | "quoted" | "closed";
+  client_name: string;
+  client_contact: string | null;
+  client_phone: string | null;
+  client_email: string | null;
+  request_text: string | null;
+  items: { description: string; quantity: number }[];
+  trip: Trip | null;
+  notes: string | null;
+  quote_id: string | null;
+  created_at: string;
 };
 
 export type TemplateId = "modern" | "classic" | "minimal" | "bold";

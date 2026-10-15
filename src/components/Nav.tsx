@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Plus, Users, Building2, UserRound, ShieldCheck, LogOut, MailPlus } from "lucide-react";
+import { FileText, Plus, Users, Building2, UserRound, ShieldCheck, LogOut, MailPlus, Inbox } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 
 type Props = {
@@ -11,15 +11,17 @@ type Props = {
   isSuper: boolean;
   isManager: boolean;
   hasBusiness: boolean;
+  newRequests?: number;
 };
 
-export default function Nav({ user, business, isSuper, isManager, hasBusiness }: Props) {
+export default function Nav({ user, business, isSuper, isManager, hasBusiness, newRequests = 0 }: Props) {
   const path = usePathname();
   const items = [
     ...(hasBusiness
       ? [
           { href: "/quotes", label: "הצעות מחיר", icon: FileText },
           { href: "/quotes/new", label: "הצעה חדשה", icon: Plus },
+          { href: "/requests", label: "בקשות מלקוחות", icon: Inbox, badge: newRequests },
           { href: "/quotes/import", label: "ממייל להצעה", icon: MailPlus },
           { href: "/clients", label: "לקוחות", icon: Users },
           ...(isManager || isSuper ? [{ href: "/business", label: "פרטי העסק", icon: Building2 }] : []),
@@ -56,6 +58,9 @@ export default function Nav({ user, business, isSuper, isManager, hasBusiness }:
               >
                 <Icon className="size-[18px]" strokeWidth={2.2} />
                 {it.label}
+                {"badge" in it && it.badge ? (
+                  <span className={`ms-auto rounded-full px-2 py-0.5 text-xs font-extrabold ${on ? "bg-white text-brand" : "bg-rose-500 text-white"}`}>{it.badge}</span>
+                ) : null}
               </Link>
             );
           })}
@@ -93,12 +98,15 @@ export default function Nav({ user, business, isSuper, isManager, hasBusiness }:
 
       {/* מובייל — תחתון */}
       <nav className="no-print fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-stone-200 bg-white/95 px-1 pb-[max(env(safe-area-inset-bottom),6px)] pt-1.5 backdrop-blur lg:hidden">
-        {items.filter((it) => it.href !== "/business" && it.href !== "/quotes/new").map((it) => {
+        {items.filter((it) => it.href !== "/business" && it.href !== "/quotes/new" && it.href !== "/quotes/import").map((it) => {
           const Icon = it.icon;
           const on = active(it.href);
           return (
             <Link key={it.href} href={it.href} className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg py-1 text-[11px] font-semibold ${on ? "text-brand" : "text-stone-500"}`}>
-              <Icon className="size-5" strokeWidth={on ? 2.5 : 2} />
+              <span className="relative">
+                <Icon className="size-5" strokeWidth={on ? 2.5 : 2} />
+                {"badge" in it && it.badge ? <span className="absolute -top-1.5 -right-2 rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-4 text-white">{it.badge}</span> : null}
+              </span>
               <span className="truncate">{it.label}</span>
             </Link>
           );

@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Copy, Download, Mail, MessageCircle, Pencil, Printer, Share2, Trash2, CopyPlus, Check, Link2 } from "lucide-react";
-import { deleteQuote, duplicateQuote, markSent, setQuoteStatus } from "@/app/actions/quotes";
+import { Copy, Download, Mail, MessageCircle, Pencil, Printer, Share2, Trash2, CopyPlus, Check, Link2, RefreshCw, PlugZap } from "lucide-react";
+import { deleteQuote, duplicateQuote, markSent, resendWebhook, setQuoteStatus } from "@/app/actions/quotes";
 import { downloadPdf, pdfFile } from "@/lib/pdf";
 import { STATUS_LABEL, money, toIntlPhone } from "@/lib/quote";
 import type { QuoteStatus } from "@/lib/types";
@@ -20,6 +20,7 @@ type Props = {
   clientEmail: string | null;
   total: number;
   docId: string;
+  sync?: { enabled: boolean; ok?: boolean; at?: string; code?: number | null };
 };
 
 export default function QuoteActions(p: Props) {
@@ -133,6 +134,28 @@ export default function QuoteActions(p: Props) {
           ))}
         </div>
       </div>
+
+      {p.sync?.enabled ? (
+        <div className="card p-4">
+          <div className="mb-1 flex items-center gap-2 text-sm font-bold text-stone-500">
+            <PlugZap className="size-4" /> סנכרון למערכת החיצונית
+          </div>
+          <div className="text-sm">
+            {!p.sync.at ? (
+              <span className="text-stone-500">יישלח אוטומטית כשההצעה תאושר.</span>
+            ) : p.sync.ok ? (
+              <span className="font-semibold text-emerald-700">נשלח בהצלחה · {new Date(p.sync.at).toLocaleString("he-IL")}</span>
+            ) : (
+              <span className="font-semibold text-rose-700">השליחה נכשלה{p.sync.code ? ` (קוד ${p.sync.code})` : ""} · {new Date(p.sync.at).toLocaleString("he-IL")}</span>
+            )}
+          </div>
+          {p.status === "approved" ? (
+            <button className="btn-ghost mt-3 w-full" onClick={() => start(async () => { await resendWebhook(p.id); })}>
+              <RefreshCw className="size-4" /> שליחה חוזרת
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="card grid grid-cols-2 gap-2 p-4">
         <Link href={`/quotes/${p.id}/edit`} className="btn-ghost">

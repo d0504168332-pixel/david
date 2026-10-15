@@ -20,6 +20,17 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ id: 
     author = data as Partial<Profile> | null;
   }
   const num = quoteNumber(business.quote_prefix, quote.number);
+  let sync: { enabled: boolean; ok?: boolean; at?: string; code?: number | null } = { enabled: !!business.webhook_url };
+  if (business.webhook_url) {
+    const { data: d } = await supabase
+      .from("webhook_deliveries")
+      .select("ok,created_at,status_code")
+      .eq("quote_id", quote.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (d) sync = { enabled: true, ok: d.ok, at: d.created_at, code: d.status_code };
+  }
   const totals = calcTotals(quote);
 
   return (
@@ -57,6 +68,7 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ id: 
             clientEmail={quote.client_email}
             total={totals.total}
             docId="quote-doc"
+            sync={sync}
           />
         </div>
       </div>

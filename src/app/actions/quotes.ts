@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { requireBusiness } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { calcTotals } from "@/lib/quote";
-import type { QuoteItem, QuoteStatus } from "@/lib/types";
+import { sendQuoteEvent } from "@/lib/webhook";
+import type { QuoteItem, QuoteMeta, QuoteStatus } from "@/lib/types";
 
 export type QuoteInput = {
   id?: string;
@@ -28,6 +29,8 @@ export type QuoteInput = {
   vat_rate: number;
   notes: string;
   terms: string;
+  meta?: QuoteMeta;
+  request_id?: string | null;
 };
 
 function clean(s: string | null | undefined) {
@@ -93,20 +96,28 @@ export async function saveQuote(input: QuoteInput): Promise<{ id?: string; error
     total: totals.total,
     notes: clean(input.notes),
     terms: clean(input.terms),
+    meta: input.meta ?? {},
   };
 
   if (input.id) {
+    const { data: before } = await supabase.from("quotes").select("status").eq("id", input.id).maybeSingle();
     const { error } = await supabase.from("quotes").update(row).eq("id", input.id);
+    if (!error && input.status === "approved" && before?.status !== "approved") await sendQuoteEvent(input.id);
     if (error) return { error: "השמירה נכשלה: " + error.message };
     revalidatePath("/quotes");
     return { id: input.id };
   }
   const { data, error } = await supabase
     .from("quotes")
-    .insert({ ...row, created_by: profile.id })
+    .insert({ ...row, created_by: profile.id, request_id: input.request_id || null })
     .select("id")
     .single();
   if (error) return { error: "השמירה נכשלה: " + error.message };
+  if (input.request_id) {
+    await supabase.from("quote_requests").update({ status: "quoted", quote_id: data.id }).eq("id", input.request_id);
+    revalidatePath("/requests");
+  }
+  if (input.status === "approved") await sendQuoteEvent(data.id);
   revalidatePath("/quotes");
   return { id: data.id };
 }
@@ -118,9 +129,19 @@ export async function setQuoteStatus(id: string, status: QuoteStatus) {
     patch.approved_by_name = null;
     patch.approved_at = null;
   }
+  const { data: before } = await supabase.from("quotes").select("status").eq("id", id).maybeSingle();
   await supabase.from("quotes").update(patch).eq("id", id);
+  if (status === "approved" && before?.status !== "approved") await sendQuoteEvent(id);
   revalidatePath(`/quotes/${id}`);
   revalidatePath("/quotes");
+}
+
+/** שליחה חוזרת ידנית למערכת החיצונית */
+export async function resendWebhook(id: string) {
+  await requireBusiness();
+  const r = await sendQuoteEvent(id);
+  revalidatePath(`/quotes/${id}`);
+  return r;
 }
 
 export async function markSent(id: string) {
@@ -148,6 +169,7 @@ export async function duplicateQuote(id: string) {
     updated_at: _u,
     approved_at: _a,
     approved_by_name: _ab,
+    request_id: _r,
     ...rest
   } = q;
   const today = new Date().toISOString().slice(0, 10);
@@ -174,6 +196,7 @@ export async function approveByToken(token: string, name: string): Promise<{ ok?
     .update({ status: "approved", approved_by_name: n.slice(0, 80), approved_at: new Date().toISOString() })
     .eq("id", q.id);
   if (error) return { error: "האישור נכשל, נסו שוב" };
+  await sendQuoteEvent(q.id);
   revalidatePath(`/q/${token}`);
   return { ok: true };
 }

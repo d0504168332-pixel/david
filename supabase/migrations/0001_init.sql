@@ -217,3 +217,55 @@ on conflict (id) do update set public = true;
 -- keep-alive
 create or replace function public.keepalive() returns int
 language sql stable as $$ select 1 $$;
+
+-- ===== בקשות להצעת מחיר מהלקוחות (צד לקוח) =====
+alter table public.businesses add column if not exists request_token uuid not null default gen_random_uuid();
+alter table public.businesses add column if not exists request_form_type text not null default 'general';
+alter table public.businesses add column if not exists request_intro text;
+alter table public.businesses add column if not exists webhook_url text;
+alter table public.businesses add column if not exists webhook_secret text default encode(gen_random_bytes(18), 'hex');
+create unique index if not exists businesses_request_token_idx on public.businesses(request_token);
+
+-- פרטי נסיעה / מידע נוסף שמגיע עם ההצעה (למשל לסנכרון למערכת ההסעות)
+alter table public.quotes add column if not exists meta jsonb not null default '{}'::jsonb;
+alter table public.quotes add column if not exists request_id uuid;
+
+create table if not exists public.quote_requests (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  status text not null default 'new' check (status in ('new','quoted','closed')),
+  client_name text not null,
+  client_contact text,
+  client_phone text,
+  client_email text,
+  request_text text,
+  items jsonb not null default '[]'::jsonb,
+  trip jsonb,
+  notes text,
+  quote_id uuid references public.quotes(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists quote_requests_business_idx on public.quote_requests(business_id, created_at desc);
+alter table public.quote_requests enable row level security;
+drop policy if exists quote_requests_all on public.quote_requests;
+create policy quote_requests_all on public.quote_requests for all to authenticated
+  using (business_id = public.my_business_id() or public.is_super_admin())
+  with check (business_id = public.my_business_id() or public.is_super_admin());
+
+-- יומן שליחות למערכות חיצוניות (Webhook)
+create table if not exists public.webhook_deliveries (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  quote_id uuid references public.quotes(id) on delete cascade,
+  event text not null,
+  url text not null,
+  status_code int,
+  ok boolean not null default false,
+  response text,
+  created_at timestamptz not null default now()
+);
+create index if not exists webhook_deliveries_quote_idx on public.webhook_deliveries(quote_id, created_at desc);
+alter table public.webhook_deliveries enable row level security;
+drop policy if exists webhook_deliveries_select on public.webhook_deliveries;
+create policy webhook_deliveries_select on public.webhook_deliveries for select to authenticated
+  using (business_id = public.my_business_id() or public.is_super_admin());

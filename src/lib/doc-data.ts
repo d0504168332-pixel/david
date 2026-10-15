@@ -21,6 +21,7 @@ export function toDocBusiness(b: Business) {
     vat_rate: Number(b.vat_rate),
     default_notes: b.default_notes,
     default_terms: b.default_terms,
+    request_form_type: b.request_form_type ?? "general",
   };
 }
 
