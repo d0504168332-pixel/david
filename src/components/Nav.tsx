@@ -12,16 +12,17 @@ type Props = {
   isManager: boolean;
   hasBusiness: boolean;
   newRequests?: number;
+  isTransport?: boolean;
 };
 
-export default function Nav({ user, business, isSuper, isManager, hasBusiness, newRequests = 0 }: Props) {
+export default function Nav({ user, business, isSuper, isManager, hasBusiness, newRequests = 0, isTransport = false }: Props) {
   const path = usePathname();
   const items = [
     ...(hasBusiness
       ? [
           { href: "/quotes", label: "הצעות מחיר", icon: FileText },
           { href: "/quotes/new", label: "הצעה חדשה", icon: Plus },
-          { href: "/requests", label: "בקשות מלקוחות", icon: Inbox, badge: newRequests },
+          ...(isTransport ? [{ href: "/requests", label: "בקשות מלקוחות", icon: Inbox, badge: newRequests }] : []),
           { href: "/quotes/import", label: "ממייל להצעה", icon: MailPlus },
           { href: "/clients", label: "לקוחות", icon: Users },
           ...(isManager || isSuper ? [{ href: "/business", label: "פרטי העסק", icon: Building2 }] : []),

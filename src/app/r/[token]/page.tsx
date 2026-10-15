@@ -10,10 +10,10 @@ async function load(token: string) {
   if (!UUID.test(token)) return null;
   const { data } = await createAdminClient()
     .from("businesses")
-    .select("name,logo_url,primary_color,accent_color,phone,email,address,request_form_type,request_intro,is_active")
+    .select("name,logo_url,primary_color,accent_color,phone,email,address,business_type,request_intro,is_active")
     .eq("request_token", token)
     .maybeSingle();
-  return data && data.is_active ? data : null;
+  return data && data.is_active && data.business_type === "transport" ? data : null;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
@@ -42,7 +42,7 @@ export default async function RequestPage({ params }: { params: Promise<{ token:
         </div>
       </header>
       <main className="mx-auto -mt-10 max-w-3xl px-4 pb-16">
-        <RequestForm token={token} type={b.request_form_type === "transport" ? "transport" : "general"} intro={b.request_intro} businessName={b.name} contact={{ phone: b.phone, email: b.email }} />
+        <RequestForm token={token} type="transport" intro={b.request_intro} businessName={b.name} contact={{ phone: b.phone, email: b.email }} />
       </main>
     </div>
   );

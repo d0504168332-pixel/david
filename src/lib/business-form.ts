@@ -45,7 +45,12 @@ export function businessRowFromForm(form: FormData) {
     quote_start_number: Number.isInteger(start) && start > 0 ? start : 1001,
     show_tax_id: form.get("show_tax_id") === "on",
     show_website: form.get("show_website") === "on",
-    request_form_type: form.get("request_form_type") === "transport" ? "transport" : "general",
+    ...(form.get("business_type")
+      ? (() => {
+          const t = form.get("business_type") === "transport" ? "transport" : "general";
+          return { business_type: t, request_form_type: t };
+        })()
+      : {}),
     request_intro: s(form, "request_intro"),
     ops_emails: (s(form, "ops_emails") ?? "")
       .split(/[,;\s]+/)

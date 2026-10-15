@@ -13,7 +13,7 @@ export default async function NewBusinessPage() {
         <ChevronRight className="size-4" /> ניהול מערכת
       </Link>
       <PageHeader title="פתיחת עסק חדש" subtitle="אחרי השמירה תוכל להוסיף משתמשים לעסק" />
-      <BusinessForm action={createBusiness} submitLabel="יצירת העסק" />
+      <BusinessForm action={createBusiness} submitLabel="יצירת העסק" canChangeType />
     </>
   );
 }

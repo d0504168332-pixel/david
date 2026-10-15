@@ -49,17 +49,17 @@ export async function POST(req: NextRequest) {
     if (m?.[1]) codes.add(m[1].toLowerCase());
   }
   const admin = createAdminClient();
-  let biz: { id: string; is_active: boolean } | null = null;
+  let biz: { id: string; is_active: boolean; business_type: string } | null = null;
   for (const c of codes) {
     if (!/^[a-z0-9]{6,40}$/.test(c)) continue;
-    const { data } = await admin.from("businesses").select("id,is_active").eq("inbox_code", c).maybeSingle();
+    const { data } = await admin.from("businesses").select("id,is_active,business_type").eq("inbox_code", c).maybeSingle();
     if (data) {
       biz = data;
       break;
     }
   }
   // 200 גם כשלא נמצא — כדי שספק המייל לא ינסה שוב בלי סוף
-  if (!biz || !biz.is_active) return NextResponse.json({ ok: false, error: "unknown inbox" });
+  if (!biz || !biz.is_active || biz.business_type !== "transport") return NextResponse.json({ ok: false, error: "unknown inbox" });
 
   const full = [subject && `נושא: ${subject}`, fromName || fromEmail ? `מאת: ${fromName} <${fromEmail}>` : "", text].filter(Boolean).join("\n");
   const parsed = (await parseWithAI(full)) ?? parseRequestHeuristic(full);

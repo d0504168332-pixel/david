@@ -38,5 +38,9 @@ export async function sendTripEmail(quoteId: string) {
 
 /** כל מה שקורה כשהצעה מאושרת: Webhook למערכת חיצונית + מייל נסיעה לסדרן */
 export async function onQuoteApproved(quoteId: string) {
+  const { data: q } = await createAdminClient().from("quotes").select("business_id").eq("id", quoteId).maybeSingle();
+  if (!q) return;
+  const { data: b } = await createAdminClient().from("businesses").select("business_type").eq("id", q.business_id).maybeSingle();
+  if (b?.business_type !== "transport") return; // מייל לסדרן ו-YIT — רק לחברות הסעות
   await Promise.allSettled([sendQuoteEvent(quoteId), sendTripEmail(quoteId)]);
 }

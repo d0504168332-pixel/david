@@ -23,8 +23,8 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ id: 
   const num = quoteNumber(business.quote_prefix, quote.number);
   // סטטוס שליחה אחרי אישור: Webhook ומייל לסדרן
   const channels: { key: string; label: string }[] = [
-    ...(business.ops_emails ? [{ key: "email.trip", label: `מייל נסיעה ל-${business.ops_emails}` }] : []),
-    ...(business.webhook_url ? [{ key: "quote.approved", label: "מערכת חיצונית (Webhook)" }] : []),
+    ...(business.business_type === "transport" && business.ops_emails ? [{ key: "email.trip", label: `מייל נסיעה ל-${business.ops_emails}` }] : []),
+    ...(business.business_type === "transport" && business.webhook_url ? [{ key: "quote.approved", label: "מערכת חיצונית (Webhook)" }] : []),
   ];
   const sync: { label: string; ok?: boolean; at?: string; code?: number | null }[] = [];
   for (const ch of channels) {
@@ -38,7 +38,7 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ id: 
       .maybeSingle();
     sync.push({ label: ch.label, ok: d?.ok, at: d?.created_at, code: d?.status_code });
   }
-  const csv = quote.meta?.trip ? tripCsv(quote, business) : null;
+  const csv = business.business_type === "transport" && quote.meta?.trip ? tripCsv(quote, business) : null;
   const totals = calcTotals(quote);
 
   return (

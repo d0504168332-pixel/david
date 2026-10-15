@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, Bus, Briefcase } from "lucide-react";
 import SubmitButton from "@/components/SubmitButton";
 import FormMessage from "@/components/FormMessage";
 import QuoteDocument from "@/components/doc/QuoteDocument";
@@ -29,12 +29,15 @@ export default function BusinessForm({
   hidden,
   submitLabel = "שמירת פרטי העסק",
   previewAuthor,
+  canChangeType = false,
 }: {
   action: Action;
   business?: Partial<Business> | null;
   hidden?: Record<string, string>;
   submitLabel?: string;
   previewAuthor?: DocAuthor | null;
+  /** רק מנהל המערכת קובע אם זה עסק הסעות או עסק אחר */
+  canChangeType?: boolean;
 }) {
   const [state, formAction] = useActionState(action, undefined);
   const [v, setV] = useState({
@@ -53,7 +56,8 @@ export default function BusinessForm({
   });
   const [logoPreview, setLogoPreview] = useState<string | null>(business?.logo_url ?? null);
   const [removeLogo, setRemoveLogo] = useState(false);
-  const [formType, setFormType] = useState<"general" | "transport">((business?.request_form_type as "general" | "transport") ?? "general");
+  const [bizType, setBizType] = useState<"general" | "transport" | null>((business?.business_type as "general" | "transport" | undefined) ?? null);
+  const isTransport = bizType === "transport";
   const set = (k: keyof typeof v, val: string | boolean) => setV((p) => ({ ...p, [k]: val }));
 
   const today = todayStr();
@@ -96,10 +100,54 @@ export default function BusinessForm({
     show_stamp: true,
   };
 
+  // פתיחת עסק חדש: קודם כל שואלים איזה סוג עסק זה
+  if (!bizType) {
+    return (
+      <div className="card mx-auto max-w-3xl p-6 sm:p-8">
+        <h2 className="text-xl font-extrabold">איזה סוג עסק זה?</h2>
+        <p className="mt-1 text-stone-500">הבחירה קובעת אילו כלים יקבל העסק. אפשר לשנות אחר כך בהגדרות.</p>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <TypeCard
+            title="חברת הסעות"
+            desc="הצעות מחיר להסעות עם פרטי נסיעה, טופס בקשת נסיעה ללקוחות, קליטת בקשות במייל, ובאישור — מייל לסדרן וקובץ לייבוא ל-YIT."
+            icon={<Bus className="size-7" />}
+            onClick={() => setBizType("transport")}
+          />
+          <TypeCard
+            title="עסק אחר"
+            desc="הפקת הצעות מחיר מעוצבות: לקוחות, פריטים, חתימה וחותמת, PDF ושליחה בוואטסאפ ובמייל."
+            icon={<Briefcase className="size-7" />}
+            onClick={() => setBizType("general")}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <form action={formAction} className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
       {hidden ? Object.entries(hidden).map(([k, val]) => <input key={k} type="hidden" name={k} value={val} />) : null}
+      {canChangeType ? <input type="hidden" name="business_type" value={bizType} /> : null}
       <div className="space-y-5">
+        <section className="card flex flex-wrap items-center justify-between gap-3 p-4">
+          <div className="flex items-center gap-3">
+            <div className="grid size-10 place-items-center rounded-xl bg-brand/10 text-brand">{isTransport ? <Bus className="size-5" /> : <Briefcase className="size-5" />}</div>
+            <div>
+              <div className="text-xs font-semibold text-stone-500">סוג העסק</div>
+              <div className="font-extrabold">{isTransport ? "חברת הסעות" : "עסק כללי — הצעות מחיר"}</div>
+            </div>
+          </div>
+          {canChangeType ? (
+            <div className="flex rounded-xl bg-stone-100 p-1">
+              {(["transport", "general"] as const).map((t) => (
+                <button key={t} type="button" onClick={() => setBizType(t)} className={`rounded-lg px-3 py-1.5 text-sm font-bold ${bizType === t ? "bg-white shadow-sm" : "text-stone-500"}`}>
+                  {t === "transport" ? "הסעות" : "אחר"}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </section>
+
         <section className="card p-5">
           <h2 className="mb-4 text-[17px] font-extrabold">פרטי העסק</h2>
           <div className="mb-5 flex items-center gap-4">
@@ -180,28 +228,16 @@ export default function BusinessForm({
           </div>
         </section>
 
+        {isTransport ? (
         <section className="card p-5">
-          <h2 className="mb-1 text-[17px] font-extrabold">טופס בקשה ללקוחות</h2>
-          <p className="mb-4 text-sm text-stone-500">הלקוח ממלא בקישור מה הוא צריך, והבקשה מגיעה ל"בקשות מלקוחות".</p>
-          <label className="label">סוג הטופס</label>
-          <div className="mb-3 grid grid-cols-2 gap-2">
-            {(
-              [
-                ["general", "כללי", "מוצרים ושירותים + כמויות"],
-                ["transport", "הסעות", "מוצא, יעד, תאריך, שעה ונוסעים"],
-              ] as const
-            ).map(([id, label, desc]) => (
-              <label key={id} className={`cursor-pointer rounded-xl border-2 p-3 transition ${formType === id ? "border-brand bg-brand/5" : "border-stone-200"}`}>
-                <input type="radio" name="request_form_type" value={id} checked={formType === id} onChange={() => setFormType(id)} className="sr-only" />
-                <div className="font-bold">{label}</div>
-                <div className="text-xs text-stone-500">{desc}</div>
-              </label>
-            ))}
-          </div>
+          <h2 className="mb-1 text-[17px] font-extrabold">טופס בקשת נסיעה ללקוחות</h2>
+          <p className="mb-4 text-sm text-stone-500">הלקוח ממלא בקישור מוצא, יעד, תאריך, שעה ונוסעים — והבקשה מגיעה ל"בקשות מלקוחות".</p>
           <label className="label" htmlFor="request_intro">טקסט פתיחה בטופס</label>
-          <textarea id="request_intro" name="request_intro" defaultValue={business?.request_intro ?? ""} placeholder="מלאו את הפרטים ונחזור אליכם עם הצעת מחיר מסודרת." className="field min-h-16" />
+          <textarea id="request_intro" name="request_intro" defaultValue={business?.request_intro ?? ""} placeholder="ספרו לנו לאן נוסעים — ונחזור אליכם עם הצעת מחיר מסודרת." className="field min-h-16" />
         </section>
+        ) : null}
 
+        {isTransport ? (
         <section className="card p-5">
           <h2 className="mb-1 text-[17px] font-extrabold">כשהצעה מאושרת</h2>
           <p className="mb-4 text-sm text-stone-500">
@@ -219,6 +255,7 @@ export default function BusinessForm({
             </div>
           ) : null}
         </section>
+        ) : null}
 
         <section className="card p-5">
           <h2 className="mb-4 text-[17px] font-extrabold">ברירות מחדל להצעות</h2>
@@ -329,5 +366,15 @@ function TemplateThumb({ id, color, accent }: { id: TemplateId; color: string; a
         <div className="h-1 w-3/5 rounded bg-stone-200" />
       </div>
     </div>
+  );
+}
+
+function TypeCard({ title, desc, icon, onClick }: { title: string; desc: string; icon: React.ReactNode; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="group rounded-2xl border-2 border-stone-200 p-5 text-right transition hover:-translate-y-0.5 hover:border-brand hover:shadow-md">
+      <div className="grid size-14 place-items-center rounded-2xl bg-brand/10 text-brand transition group-hover:bg-brand group-hover:text-white">{icon}</div>
+      <div className="mt-4 text-lg font-extrabold">{title}</div>
+      <div className="mt-1 text-sm leading-relaxed text-stone-500">{desc}</div>
+    </button>
   );
 }

@@ -4,3 +4,6 @@ create unique index if not exists businesses_inbox_code_idx on public.businesses
 alter table public.quote_requests add column if not exists source text not null default 'form';
 alter table public.quote_requests add column if not exists subject text;
 alter table public.businesses add column if not exists ops_emails text;
+
+-- ===== סוג העסק: הסעות / כללי =====
+alter table public.businesses add column if not exists business_type text not null default 'general' check (business_type in ('general','transport'));

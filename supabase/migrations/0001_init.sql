@@ -278,3 +278,6 @@ alter table public.quote_requests add column if not exists subject text;
 
 -- ===== שליחת נסיעה מאושרת במייל (לסדרן / ספק / מערכת YIT) =====
 alter table public.businesses add column if not exists ops_emails text;
+
+-- ===== סוג העסק: הסעות / כללי =====
+alter table public.businesses add column if not exists business_type text not null default 'general' check (business_type in ('general','transport'));

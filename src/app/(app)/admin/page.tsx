@@ -68,6 +68,7 @@ export default async function AdminPage() {
                 <ChevronLeft className="size-5 text-stone-300 transition group-hover:text-ink" />
               </div>
               <div className="mt-3 flex gap-2">
+                <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-bold text-stone-600">{b.business_type === "transport" ? "חברת הסעות" : "עסק כללי"}</span>
                 {!b.is_active ? <span className="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-700 ring-1 ring-rose-200">מושבת</span> : null}
                 {profile.business_id === b.id ? <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-bold text-brand">העסק שלך</span> : null}
               </div>

@@ -20,6 +20,7 @@ export type Business = {
   is_active: boolean;
   request_token: string;
   inbox_code: string;
+  business_type: "general" | "transport";
   request_form_type: "general" | "transport";
   request_intro: string | null;
   webhook_url: string | null;

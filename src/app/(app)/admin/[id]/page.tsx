@@ -34,7 +34,7 @@ export default async function AdminBusinessPage({ params, searchParams }: { para
       <MembersPanel businessId={business.id} members={members ?? []} selfId={profile.id} />
 
       <h2 className="mb-4 mt-10 text-xl font-extrabold">פרטי העסק ועיצוב</h2>
-      <BusinessForm action={updateBusinessAdmin} business={business} hidden={{ business_id: business.id }} />
+      <BusinessForm action={updateBusinessAdmin} business={business} hidden={{ business_id: business.id }} canChangeType />
 
       <BusinessDanger businessId={business.id} active={business.is_active} isMine={profile.business_id === business.id} />
     </>

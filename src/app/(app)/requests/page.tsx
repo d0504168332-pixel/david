@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { Inbox } from "lucide-react";
 import { requireBusiness } from "@/lib/auth";
@@ -12,6 +13,7 @@ type SP = Promise<{ status?: string }>;
 
 export default async function RequestsPage({ searchParams }: { searchParams: SP }) {
   const { supabase, business } = await requireBusiness();
+  if (business.business_type !== "transport") redirect("/quotes");
   const sp = await searchParams;
   const status = ["new", "quoted", "closed"].includes(sp.status ?? "") ? sp.status! : "new";
   const { data: all } = await supabase

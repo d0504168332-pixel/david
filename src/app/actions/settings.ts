@@ -46,6 +46,8 @@ export async function updateMyBusiness(_: FormState, form: FormData): Promise<Fo
   const { supabase, profile, business } = await requireBusiness();
   if (profile.business_role !== "manager" && !profile.is_super_admin) return { error: "אין הרשאה לערוך את פרטי העסק" };
   const row: Record<string, unknown> = businessRowFromForm(form);
+  delete row.business_type; // רק מנהל המערכת משנה סוג עסק
+  delete row.request_form_type;
   if (!row.name) return { error: "נא למלא שם עסק" };
   const logo = await uploadLogo(business.id, form.get("logo") as File | null);
   if (logo && typeof logo === "object") return logo;
