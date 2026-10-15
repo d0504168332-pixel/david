@@ -155,7 +155,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="card p-4">
       <div className="text-[12.5px] font-semibold text-stone-500">{label}</div>
-      <div className="mt-1 truncate text-lg font-extrabold tabular-nums sm:text-2xl">{value}</div>
+      <div className="mt-1 text-[15px] font-extrabold leading-tight tabular-nums break-words sm:text-2xl">{value}</div>
     </div>
   );
 }

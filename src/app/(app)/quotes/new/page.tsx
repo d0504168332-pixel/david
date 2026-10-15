@@ -23,7 +23,7 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
     : null;
   return (
     <>
-      <PageHeader title="הצעת מחיר חדשה" subtitle="ממלאים משמאל — רואים את המסמך מתעדכן בזמן אמת" />
+      <PageHeader title="הצעת מחיר חדשה" subtitle="ממלאים מימין — רואים את המסמך מתעדכן בזמן אמת" />
       <QuoteEditor business={toDocBusiness(business)} author={toDocAuthor(profile)} clients={clients ?? []} initial={initial} history={history} />
     </>
   );
