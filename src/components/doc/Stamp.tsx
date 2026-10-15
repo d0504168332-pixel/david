@@ -35,6 +35,8 @@ export default function Stamp({
 }: Props) {
   const uid = useId().replace(/:/g, "");
   const ink = `ink-${uid}`;
+  // בחותמת מודרנית הטקסט קטן — מרקם דיו עדין יותר כדי שיישאר קריא
+  const light = shape === "modern" || shape === "inline";
 
   const filter = (
     <filter id={ink} x="-10%" y="-10%" width="120%" height="120%">
@@ -42,12 +44,12 @@ export default function Stamp({
       <feColorMatrix
         in="noise"
         type="matrix"
-        values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -0.85 1.32"
+        values={`0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 ${light ? "-0.45 1.25" : "-0.85 1.32"}`}
         result="mask"
       />
       <feComposite in="SourceGraphic" in2="mask" operator="in" result="speckled" />
       <feTurbulence type="turbulence" baseFrequency="0.04" numOctaves="1" seed="3" result="warp" />
-      <feDisplacementMap in="speckled" in2="warp" scale="1.6" />
+      <feDisplacementMap in="speckled" in2="warp" scale={light ? 0.8 : 1.6} />
     </filter>
   );
 

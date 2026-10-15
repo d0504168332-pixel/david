@@ -370,11 +370,11 @@ export default function QuoteDocument({ business, author, quote, id }: Props) {
                 taxId={business.show_tax_id ? business.tax_id : null}
                 color={author.stamp_color}
                 shape={author.stamp_shape}
-                size={128}
+                size={author.stamp_shape === "round" || author.stamp_shape === "rect" ? 128 : 150}
               />
             ) : null}
             {author.show_signature ? (
-              <div style={{ textAlign: "center", marginInlineStart: author.show_stamp ? -22 : 0, position: "relative", zIndex: 1 }}>
+              <div style={{ textAlign: "center", marginInlineStart: !author.show_stamp ? 0 : author.stamp_shape === "round" || author.stamp_shape === "rect" ? -22 : 14, position: "relative", zIndex: 1 }}>
                 <Signature name={author.full_name} style={author.signature_style} color={author.signature_color} image={author.signature_image} />
                 <div style={{ borderTop: "1px solid #a8a29e", fontSize: 11, color: "#78716c", paddingTop: 2, marginTop: 2 }}>חתימה</div>
               </div>
