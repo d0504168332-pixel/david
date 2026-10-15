@@ -90,7 +90,7 @@ export default function BusinessForm({
     signature_image: null,
     signature_color: "#1e3a8a",
     stamp_color: "#1d4ed8",
-    stamp_shape: "round",
+    stamp_shape: "modern",
     show_signature: true,
     show_stamp: true,
   };

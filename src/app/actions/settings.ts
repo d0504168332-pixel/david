@@ -66,7 +66,7 @@ export type ProfileInput = {
   signature_image: string | null;
   signature_color: string;
   stamp_color: string;
-  stamp_shape: "round" | "rect";
+  stamp_shape: "modern" | "inline" | "round" | "rect";
   show_signature: boolean;
   show_stamp: boolean;
 };
@@ -88,7 +88,7 @@ export async function updateMyProfile(input: ProfileInput): Promise<FormState> {
       signature_image: input.signature_image || null,
       signature_color: COLOR_RE.test(input.signature_color) ? input.signature_color : "#1e3a8a",
       stamp_color: COLOR_RE.test(input.stamp_color) ? input.stamp_color : "#1d4ed8",
-      stamp_shape: input.stamp_shape === "rect" ? "rect" : "round",
+      stamp_shape: ["modern", "inline", "round", "rect"].includes(input.stamp_shape) ? input.stamp_shape : "modern",
       show_signature: !!input.show_signature,
       show_stamp: !!input.show_stamp,
     })

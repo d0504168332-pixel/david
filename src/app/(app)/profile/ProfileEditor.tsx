@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Eraser, Save } from "lucide-react";
 import Signature, { SIGNATURE_STYLES } from "@/components/doc/Signature";
-import Stamp from "@/components/doc/Stamp";
+import Stamp, { STAMP_SHAPES } from "@/components/doc/Stamp";
 import { Toggle } from "@/components/QuoteEditor";
 import FormMessage from "@/components/FormMessage";
 import { updateMyProfile, type ProfileInput } from "@/app/actions/settings";
@@ -97,14 +97,17 @@ export default function ProfileEditor({ profile, businessName, taxId }: { profil
           </div>
           <p className="mb-3 text-sm text-stone-500">החותמת נוצרת אוטומטית משם העסק, השם והתפקיד שלך.</p>
           <div className="grid grid-cols-2 gap-2.5">
-            {(["round", "rect"] as const).map((shape) => (
+            {STAMP_SHAPES.map(({ id: shape, label }) => (
               <button
                 key={shape}
                 type="button"
                 onClick={() => set("stamp_shape", shape)}
-                className={`grid h-40 place-items-center rounded-xl border-2 transition ${p.stamp_shape === shape ? "border-brand bg-brand/5" : "border-stone-200 hover:border-stone-300"}`}
+                className={`flex h-44 flex-col items-center justify-between gap-1 overflow-hidden rounded-xl border-2 p-2 transition ${p.stamp_shape === shape ? "border-brand bg-brand/5" : "border-stone-200 hover:border-stone-300"}`}
               >
-                <Stamp businessName={businessName} fullName={p.full_name || "השם שלך"} jobTitle={p.job_title} taxId={taxId} color={p.stamp_color} shape={shape} size={shape === "round" ? 120 : 92} />
+                <div className="grid w-full flex-1 place-items-center overflow-hidden">
+                  <Stamp businessName={businessName} fullName={p.full_name || "השם שלך"} jobTitle={p.job_title} taxId={taxId} color={p.stamp_color} shape={shape} size={shape === "round" ? 112 : shape === "rect" ? 88 : 104} />
+                </div>
+                <span className="text-xs font-semibold text-stone-600">{label}</span>
               </button>
             ))}
           </div>

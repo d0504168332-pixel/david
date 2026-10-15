@@ -2,25 +2,34 @@
 
 import { useId } from "react";
 
+export type StampShape = "modern" | "inline" | "round" | "rect";
+
+export const STAMP_SHAPES: { id: StampShape; label: string }[] = [
+  { id: "modern", label: "מודרנית" },
+  { id: "inline", label: "שורה אחת" },
+  { id: "round", label: "עגולה קלאסית" },
+  { id: "rect", label: "מלבנית קלאסית" },
+];
+
 type Props = {
   businessName: string;
   fullName: string;
   jobTitle?: string | null;
   taxId?: string | null;
   color: string;
-  shape?: "round" | "rect";
+  shape?: StampShape;
   size?: number;
   rotate?: number;
 };
 
-/** חותמת דיו — עגולה או מלבנית, נוצרת אוטומטית מפרטי העסק והחותם */
+/** חותמת דיו — נוצרת אוטומטית מפרטי העסק והחותם. מודרנית (ללא מסגרת) או קלאסית */
 export default function Stamp({
   businessName,
   fullName,
   jobTitle,
   taxId,
   color,
-  shape = "round",
+  shape = "modern",
   size = 150,
   rotate = -9,
 }: Props) {
@@ -41,6 +50,70 @@ export default function Stamp({
       <feDisplacementMap in="speckled" in2="warp" scale="1.6" />
     </filter>
   );
+
+  // הערכת רוחב טקסט (SVG לא מודד לבד)
+  const w = (t: string, fs: number, k = 0.56) => t.length * fs * k;
+  const font = { fontFamily: "var(--font-heebo)" } as const;
+
+  if (shape === "modern") {
+    // חותמת עכשווית: טקסט בלבד, בלי מסגרת — שם העסק, קו דק, שם ותפקיד, ח.פ.
+    const who = [fullName, jobTitle].filter(Boolean).join(" · ");
+    const tax = taxId ? `ח.פ. ${taxId}` : "";
+    const W = Math.max(140, w(businessName, 22), w(who, 14.5), w(tax, 10.5)) + 18;
+    const H = tax ? 88 : 72;
+    const scale = size / 150;
+    return (
+      <svg
+        width={W * scale}
+        height={H * scale}
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ transform: `rotate(${rotate * 0.5}deg)`, opacity: 0.9 }}
+        aria-label={`חותמת ${businessName}`}
+      >
+        <defs>{filter}</defs>
+        <g filter={`url(#${ink})`} fill={color} style={font}>
+          <text x={W / 2} y={27} textAnchor="middle" fontSize={22} fontWeight={800}>
+            {businessName}
+          </text>
+          <rect x={W * 0.2} y={37} width={W * 0.6} height={1.4} rx={0.7} />
+          <text x={W / 2} y={59} textAnchor="middle" fontSize={14.5} fontWeight={700}>
+            {who}
+          </text>
+          {tax ? (
+            <text x={W / 2} y={78} textAnchor="middle" fontSize={10.5} fontWeight={500} letterSpacing={0.4}>
+              {tax}
+            </text>
+          ) : null}
+        </g>
+      </svg>
+    );
+  }
+
+  if (shape === "inline") {
+    const sub = [fullName, jobTitle, taxId ? `ח.פ. ${taxId}` : null].filter(Boolean).join("  ·  ");
+    const W = Math.max(w(businessName, 19), w(sub, 11.5)) + 14;
+    const H = 50;
+    const scale = size / 150;
+    return (
+      <svg
+        width={W * scale * 1.1}
+        height={H * scale * 1.1}
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ transform: `rotate(${rotate * 0.35}deg)`, opacity: 0.9 }}
+        aria-label={`חותמת ${businessName}`}
+      >
+        <defs>{filter}</defs>
+        <g filter={`url(#${ink})`} fill={color} style={font}>
+          <text x={W - 6} y={22} textAnchor="start" direction="rtl" fontSize={19} fontWeight={800}>
+            {businessName}
+          </text>
+          <text x={W - 6} y={41} textAnchor="start" direction="rtl" fontSize={11.5} fontWeight={600}>
+            {sub}
+          </text>
+        </g>
+      </svg>
+    );
+  }
 
   if (shape === "rect") {
     const w = size * 1.45;

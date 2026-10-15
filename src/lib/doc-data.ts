@@ -35,7 +35,7 @@ export function toDocAuthor(p: Partial<Profile> | null) {
     signature_image: p.signature_image ?? null,
     signature_color: p.signature_color ?? "#1e3a8a",
     stamp_color: p.stamp_color ?? "#1d4ed8",
-    stamp_shape: p.stamp_shape ?? "round",
+    stamp_shape: p.stamp_shape ?? "modern",
     show_signature: p.show_signature ?? true,
     show_stamp: p.show_stamp ?? true,
   };

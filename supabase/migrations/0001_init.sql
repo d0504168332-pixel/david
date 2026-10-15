@@ -41,7 +41,7 @@ create table if not exists public.profiles (
   signature_image text,
   signature_color text not null default '#1e3a8a',
   stamp_color text not null default '#1d4ed8',
-  stamp_shape text not null default 'round',
+  stamp_shape text not null default 'modern',
   show_signature boolean not null default true,
   show_stamp boolean not null default true,
   created_at timestamptz not null default now()

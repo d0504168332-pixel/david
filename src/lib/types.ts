@@ -35,7 +35,7 @@ export type Profile = {
   signature_image: string | null;
   signature_color: string;
   stamp_color: string;
-  stamp_shape: "round" | "rect";
+  stamp_shape: "modern" | "inline" | "round" | "rect";
   show_signature: boolean;
   show_stamp: boolean;
   created_at: string;
