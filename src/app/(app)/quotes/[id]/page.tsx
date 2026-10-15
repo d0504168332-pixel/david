@@ -9,6 +9,7 @@ import { AUTHOR_COLS, toDocAuthor, toDocBusiness } from "@/lib/doc-data";
 import { STATUS_CLASS, STATUS_LABEL, calcTotals, formatDate, quoteNumber } from "@/lib/quote";
 import type { Profile, Quote } from "@/lib/types";
 import { tripCsv } from "@/lib/trip-export";
+import { toWin1255, yitText } from "@/lib/yit-export";
 
 export default async function QuoteViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -38,7 +39,9 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ id: 
       .maybeSingle();
     sync.push({ label: ch.label, ok: d?.ok, at: d?.created_at, code: d?.status_code });
   }
-  const csv = business.business_type === "transport" && quote.meta?.trip ? tripCsv(quote, business) : null;
+  const isTrip = business.business_type === "transport" && !!quote.meta?.trip;
+  const csv = isTrip ? tripCsv(quote, business) : null;
+  const yitB64 = isTrip ? Buffer.from(toWin1255(yitText(quote))).toString("base64") : null;
   const totals = calcTotals(quote);
 
   return (
@@ -78,6 +81,7 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ id: 
             docId="quote-doc"
             sync={sync}
             tripCsv={csv}
+            yitB64={yitB64}
           />
         </div>
       </div>

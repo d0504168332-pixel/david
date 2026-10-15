@@ -22,6 +22,7 @@ type Props = {
   docId: string;
   sync?: { label: string; ok?: boolean; at?: string; code?: number | null }[];
   tripCsv?: string | null;
+  yitB64?: string | null;
 };
 
 export default function QuoteActions(p: Props) {
@@ -141,6 +142,24 @@ export default function QuoteActions(p: Props) {
           <div className="mb-2 flex items-center gap-2 text-sm font-bold text-stone-500">
             <Bus className="size-4" /> הנסיעה
           </div>
+          {p.yitB64 ? (
+            <button
+              className="btn-primary mb-2 w-full"
+              onClick={() => {
+                const bin = atob(p.yitB64!);
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                const url = URL.createObjectURL(new Blob([bytes], { type: "text/plain;charset=windows-1255" }));
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `YIT_${p.number}.txt`;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 2000);
+              }}
+            >
+              <FileDown className="size-4" /> קובץ לייבוא ל-YIT
+            </button>
+          ) : null}
           <button
             className="btn-ghost w-full"
             onClick={() => {
@@ -152,7 +171,7 @@ export default function QuoteActions(p: Props) {
               setTimeout(() => URL.revokeObjectURL(url), 2000);
             }}
           >
-            <FileDown className="size-4" /> קובץ נסיעה לייבוא (CSV)
+            <FileDown className="size-4" /> קובץ לאקסל (CSV)
           </button>
         </div>
       ) : null}

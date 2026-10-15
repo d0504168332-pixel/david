@@ -3,6 +3,7 @@ import { createAdminClient } from "./supabase/admin";
 import { sendQuoteEvent } from "./webhook";
 import { sendMail } from "./mailer";
 import { tripCsv, tripEmailHtml } from "./trip-export";
+import { toWin1255, yitText } from "./yit-export";
 import { quoteNumber } from "./quote";
 import type { Business, Quote } from "./types";
 
@@ -22,7 +23,12 @@ export async function sendTripEmail(quoteId: string) {
     subject,
     html: tripEmailHtml(q, b),
     replyTo: q.client_email ?? undefined,
-    attachments: [{ name: `trip-${num}.csv`, content: Buffer.from(tripCsv(q, b), "utf8").toString("base64"), type: "text/csv" }],
+    attachments: [
+      // קובץ לייבוא ישיר ל-YIT (אותו מבנה כמו קובץ הייצוא של YIT)
+      { name: `YIT_${num}.txt`, content: Buffer.from(toWin1255(yitText(q))).toString("base64"), type: "text/plain" },
+      // אותם פרטים לאקסל
+      { name: `trip-${num}.csv`, content: Buffer.from(tripCsv(q, b), "utf8").toString("base64"), type: "text/csv" },
+    ],
   });
   await admin.from("webhook_deliveries").insert({
     business_id: b.id,
