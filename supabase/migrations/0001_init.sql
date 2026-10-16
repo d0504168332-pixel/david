@@ -1,4 +1,4 @@
--- QuoteCraft — סכמה ראשונית (אידמפוטנטית)
+-- סגרנו — סכמה ראשונית (אידמפוטנטית)
 
 create extension if not exists pgcrypto;
 
@@ -345,3 +345,7 @@ create table if not exists public.mail_accounts (
 create unique index if not exists mail_accounts_profile_idx on public.mail_accounts(profile_id) where profile_id is not null;
 create unique index if not exists mail_accounts_business_idx on public.mail_accounts(business_id) where profile_id is null;
 alter table public.mail_accounts enable row level security;
+
+-- ===== 0006: מיתוג סגרנו — צבעי ברירת מחדל לעסק חדש =====
+alter table public.businesses alter column primary_color set default '#16263F';
+alter table public.businesses alter column accent_color set default '#F2A93B';

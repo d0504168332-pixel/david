@@ -52,6 +52,6 @@ export function tripEmailHtml(q: Quote, b: Pick<Business, "quote_prefix" | "name
   return `<div dir="rtl" style="font-family:Arial,sans-serif;font-size:14px;color:#1c2230">
   <div style="background:${b.primary_color};color:#fff;padding:14px 18px;border-radius:10px 10px 0 0;font-size:16px;font-weight:700">✓ הצעה ${row["מספר הצעה"]} אושרה — נסיעה חדשה לשיבוץ</div>
   <table style="border-collapse:collapse;width:100%;border:1px solid #e7e5e4;border-top:0">${rows}</table>
-  <p style="color:#78716c;font-size:12px;margin-top:10px">מצורפים: קובץ YIT לייבוא ישיר, וקובץ CSV לאקסל. נשלח אוטומטית מ-${b.name} · QuoteCraft</p>
+  <p style="color:#78716c;font-size:12px;margin-top:10px">מצורפים: קובץ YIT לייבוא ישיר, וקובץ CSV לאקסל. נשלח אוטומטית מ-${b.name} · סגרנו</p>
 </div>`;
 }

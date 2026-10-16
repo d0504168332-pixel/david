@@ -57,7 +57,7 @@ function hexToRgba(hex: string, a: number) {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
-function Logo({ url, name, size = 64, light = false, bg = "#1f3a5f" }: { url: string | null; name: string; size?: number; light?: boolean; bg?: string }) {
+function Logo({ url, name, size = 64, light = false, bg = "#16263F" }: { url: string | null; name: string; size?: number; light?: boolean; bg?: string }) {
   if (url) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={url} alt={name} crossOrigin="anonymous" style={{ maxHeight: size, maxWidth: size * 2.6, objectFit: "contain" }} />;
@@ -85,8 +85,8 @@ function Logo({ url, name, size = 64, light = false, bg = "#1f3a5f" }: { url: st
 
 export default function QuoteDocument({ business, author, quote, id }: Props) {
   const t = business.template || "modern";
-  const primary = business.primary_color || "#1f3a5f";
-  const accent = business.accent_color || "#c8a35a";
+  const primary = business.primary_color || "#16263F";
+  const accent = business.accent_color || "#F2A93B";
   const totals = calcTotals(quote);
   const multi = hasOptions(quote.meta);
   const opts = multi ? quote.meta!.options! : [];

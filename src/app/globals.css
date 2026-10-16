@@ -4,12 +4,12 @@
   --font-sans: var(--font-heebo), system-ui, sans-serif;
   --color-ink: #1c2230;
   --color-paper: #f6f4ef;
-  --color-brand: var(--brand, #1f3a5f);
-  --color-gold: #c8a35a;
+  --color-brand: var(--brand, #16263F);
+  --color-gold: #F2A93B;
 }
 
 :root {
-  --brand: #1f3a5f;
+  --brand: #16263F;
 }
 
 html,

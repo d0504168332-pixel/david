@@ -7,6 +7,7 @@ import { AUTHOR_COLS, toDocAuthor, toDocBusiness } from "@/lib/doc-data";
 import { calcTotals, formatDate, hasOptions, money, quoteNumber } from "@/lib/quote";
 import type { Business, Profile, Quote } from "@/lib/types";
 import PublicActions from "./PublicActions";
+import { BrandMark } from "@/components/BrandLogo";
 
 export const dynamic = "force-dynamic";
 
@@ -92,6 +93,9 @@ export default async function PublicQuote({ params }: { params: Promise<{ token:
             chosenLabel={chosen?.label ?? null}
             contact={{ name: author?.full_name ?? business.name, phone: author?.phone ?? business.phone, email: author?.email ?? business.email }}
           />
+          <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-stone-400">
+            <BrandMark size={16} /> נוצר ונשלח עם סגרנו
+          </div>
         </aside>
       </main>
     </div>

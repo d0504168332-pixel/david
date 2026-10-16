@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const s = await requireSession();
-  const brand = s.business?.primary_color || "#1f3a5f";
+  const brand = s.business?.primary_color || "#16263F";
   let newRequests = 0;
   if (s.business?.business_type === "transport") {
     const { count } = await s.supabase.from("quote_requests").select("id", { count: "exact", head: true }).eq("business_id", s.business.id).eq("status", "new");

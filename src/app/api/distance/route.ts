@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
       u.searchParams.set("limit", "1");
       u.searchParams.set("countrycodes", "il");
       const r = await fetch(u, {
-        headers: { "user-agent": "QuoteCraft/1.0 (quotes app)", "accept-language": "he" },
+        headers: { "user-agent": "Sgarnu/1.0 (quotes app)", "accept-language": "he" },
         signal: AbortSignal.timeout(8000),
       });
       const j = (await r.json()) as { lat: string; lon: string }[];

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { FileText, Plus, Users, Building2, UserRound, ShieldCheck, LogOut, MailPlus, Inbox, BarChart3, Zap } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import InstallApp from "@/components/InstallApp";
+import { BrandMark, BrandWordmark } from "@/components/BrandLogo";
 
 type Props = {
   user: { name: string; email: string; title: string | null };
@@ -48,8 +49,8 @@ export default function Nav({ user, business, isSuper, isManager, hasBusiness, n
         <div className="flex items-center gap-3 px-2">
           <BizMark business={business} />
           <div className="min-w-0">
-            <div className="truncate text-[15px] font-extrabold">{business?.name ?? "QuoteCraft"}</div>
-            <div className="text-xs text-stone-500">הצעות מחיר מעוצבות</div>
+            <div className="truncate text-[15px] font-extrabold">{business?.name ?? "סגרנו"}</div>
+            <div className="text-xs text-stone-500">הצעות מחיר שנסגרות</div>
           </div>
         </div>
         <nav className="mt-8 flex flex-col gap-1">
@@ -74,7 +75,10 @@ export default function Nav({ user, business, isSuper, isManager, hasBusiness, n
           })}
           <InstallApp variant="link" />
         </nav>
-        <div className="mt-auto rounded-2xl border border-stone-200 bg-stone-50/70 p-3">
+        <div className="mt-auto mb-3 flex items-center justify-center gap-2 text-xs text-stone-400">
+          <BrandMark size={18} /> <BrandWordmark size={15} />
+        </div>
+        <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-3">
           <div className="flex items-center gap-3">
             <div className="grid size-9 place-items-center rounded-full bg-brand/10 text-sm font-bold text-brand">
               {user.name?.[0] ?? "?"}
@@ -96,7 +100,7 @@ export default function Nav({ user, business, isSuper, isManager, hasBusiness, n
       <header className="no-print sticky top-0 z-30 flex items-center justify-between border-b border-stone-200/80 bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
         <div className="flex min-w-0 items-center gap-2.5">
           <BizMark business={business} small />
-          <span className="truncate font-extrabold">{business?.name ?? "QuoteCraft"}</span>
+          <span className="truncate font-extrabold">{business?.name ?? "סגרנו"}</span>
         </div>
         <form action={signOut}>
           <button className="rounded-lg p-2 text-stone-500" title="התנתקות">
@@ -131,8 +135,10 @@ function BizMark({ business, small = false }: { business: Props["business"]; sma
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={business.logo} alt="" className={`${cls} border border-stone-200 bg-white object-contain p-1`} />;
   return (
-    <div className={`${cls} grid place-items-center bg-brand font-black text-white`}>
-      {(business?.name ?? "Q").trim()[0]}
-    </div>
+    business ? (
+      <div className={`${cls} grid place-items-center bg-brand font-black text-white`}>{business.name.trim()[0]}</div>
+    ) : (
+      <BrandMark size={small ? 32 : 44} />
+    )
   );
 }

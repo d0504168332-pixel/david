@@ -20,8 +20,8 @@ const TEMPLATES: { id: TemplateId; label: string; desc: string }[] = [
   { id: "bold", label: "נועז", desc: "בלוק צבע בולט וכותרת חזקה" },
 ];
 
-const PALETTE = ["#1f3a5f", "#0f766e", "#7c2d12", "#4c1d95", "#111827", "#9f1239", "#1d4ed8", "#365314"];
-const ACCENTS = ["#c8a35a", "#f59e0b", "#14b8a6", "#e11d48", "#a3a3a3", "#84cc16"];
+const PALETTE = ["#16263F", "#1f3a5f", "#0f766e", "#7c2d12", "#4c1d95", "#111827", "#9f1239", "#1d4ed8", "#365314"];
+const ACCENTS = ["#F2A93B", "#c8a35a", "#f59e0b", "#14b8a6", "#e11d48", "#a3a3a3", "#84cc16"];
 
 export default function BusinessForm({
   action,
@@ -47,8 +47,8 @@ export default function BusinessForm({
     email: business?.email ?? "",
     website: business?.website ?? "",
     tax_id: business?.tax_id ?? "",
-    primary_color: business?.primary_color ?? "#1f3a5f",
-    accent_color: business?.accent_color ?? "#c8a35a",
+    primary_color: business?.primary_color ?? "#16263F",
+    accent_color: business?.accent_color ?? "#F2A93B",
     template: (business?.template ?? "modern") as TemplateId,
     quote_prefix: business?.quote_prefix ?? "Q-",
     show_tax_id: business?.show_tax_id ?? true,
