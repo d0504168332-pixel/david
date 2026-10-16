@@ -20,7 +20,9 @@ export default function LoginForm() {
       </div>
       <FormMessage state={state} />
       <SubmitButton className="btn-primary w-full py-3" pendingText="מתחבר...">כניסה</SubmitButton>
-      <p className="text-center text-sm text-stone-500">שכחת סיסמה? פנה למנהל המערכת לאיפוס.</p>
+      <p className="text-center text-sm text-stone-500">
+        <Link href="/forgot" className="font-bold text-[#16263F] underline underline-offset-4">שכחתי סיסמה</Link>
+      </p>
       <div className="mt-2 rounded-xl border border-dashed border-stone-300 p-4 text-center text-sm">
         <div className="font-semibold text-stone-700">אין לך משתמש? רוצה מנוי לסגרנו?</div>
         <Link href="/join" className="mt-1 inline-block font-extrabold text-[#16263F] underline underline-offset-4">

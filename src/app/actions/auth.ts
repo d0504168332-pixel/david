@@ -71,3 +71,27 @@ export async function changePassword(_: FormState, form: FormData): Promise<Form
   if (error) return { error: "עדכון הסיסמה נכשל: " + error.message };
   return { ok: "הסיסמה עודכנה" };
 }
+
+/** שכחתי סיסמה: שולח קישור למייל, ובו בוחרים סיסמה חדשה */
+export async function requestPasswordReset(_: FormState, form: FormData): Promise<FormState> {
+  const email = String(form.get("email") ?? "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "נא להזין כתובת מייל תקינה" };
+  const { headers } = await import("next/headers");
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
+  // זרימה "ישירה" (לא PKCE) — כך הקישור עובד גם אם נפתח בדפדפן אחר (למשל מתוך אפליקציית המייל בטלפון)
+  const { createClient: createPlain } = await import("@supabase/supabase-js");
+  const plain = createPlain(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false },
+  });
+  const { error } = await plain.auth.resetPasswordForEmail(email, { redirectTo: `${origin}/auth/confirm?next=/reset-password` });
+  if (error && /rate|seconds/i.test(error.message)) return { error: "נשלחו כבר כמה קישורים. נסו שוב בעוד כמה דקות." };
+  return { ok: `אם הכתובת רשומה במערכת, נשלח אליה קישור לבחירת סיסמה חדשה. בדקו את תיבת המייל (גם בספאם).` };
+}
+
+/** קביעת סיסמה חדשה אחרי לחיצה על הקישור במייל */
+export async function setNewPassword(_: FormState, form: FormData): Promise<FormState> {
+  const r = await changePassword(_, form);
+  if (r?.error) return r;
+  redirect("/");
+}
