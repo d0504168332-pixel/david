@@ -2,7 +2,8 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import type { Business, Profile } from "@/lib/types";
-import { calcTotals, formatDate, money, quoteNumber, type QuoteForDoc } from "@/lib/quote";
+import { calcTotals, formatDate, hasOptions, money, quoteNumber, tripDates, type QuoteForDoc } from "@/lib/quote";
+import type { QuoteItem } from "@/lib/types";
 import Stamp from "./Stamp";
 import Signature from "./Signature";
 
@@ -87,6 +88,12 @@ export default function QuoteDocument({ business, author, quote, id }: Props) {
   const primary = business.primary_color || "#1f3a5f";
   const accent = business.accent_color || "#c8a35a";
   const totals = calcTotals(quote);
+  const multi = hasOptions(quote.meta);
+  const opts = multi ? quote.meta!.options! : [];
+  const optIds = opts.map((o) => o.id);
+  const chosen = multi && quote.meta?.chosen_option && optIds.includes(quote.meta.chosen_option) ? quote.meta.chosen_option : null;
+  const common = multi ? quote.items.filter((it) => !it.option || !optIds.includes(it.option)) : quote.items;
+  const dates = tripDates(quote.meta?.trip);
   const isClassic = t === "classic";
   const baseFont = isClassic ? "var(--font-frank), var(--font-heebo), serif" : "var(--font-heebo), sans-serif";
   const num = quoteNumber(business.quote_prefix, quote.number);
@@ -267,7 +274,13 @@ export default function QuoteDocument({ business, author, quote, id }: Props) {
             {(
               [
                 ["מסלול", `${quote.meta.trip.origin ?? ""} ← ${quote.meta.trip.destination ?? ""}`, 2],
-                ["תאריך ושעה", [quote.meta.trip.date && formatDate(quote.meta.trip.date), quote.meta.trip.time].filter(Boolean).join(" · ") || "—", 1],
+                [
+                  dates.length > 1 ? `${dates.length} תאריכים` : "תאריך ושעה",
+                  dates.length > 1
+                    ? [dates.map((d) => formatDate(d).slice(0, 5)).join(", "), quote.meta.trip.time].filter(Boolean).join(" · ")
+                    : [quote.meta.trip.date && formatDate(quote.meta.trip.date), quote.meta.trip.time].filter(Boolean).join(" · ") || "—",
+                  1,
+                ],
                 ["נוסעים", quote.meta.trip.passengers ? String(quote.meta.trip.passengers) : "—", 1],
                 ["סוג נסיעה", quote.meta.trip.round_trip ? `הלוך-חזור${quote.meta.trip.return_time ? ` (חזור ${quote.meta.trip.return_time})` : ""}` : "כיוון אחד", 2],
                 ["עצירות", quote.meta.trip.stops || "—", 2],
@@ -314,20 +327,35 @@ export default function QuoteDocument({ business, author, quote, id }: Props) {
             </tr>
           </thead>
           <tbody>
-            {(quote.items.length ? quote.items : []).map((it, idx) => (
-              <tr key={it.id ?? idx} style={{ background: t !== "minimal" && idx % 2 === 1 ? hexToRgba(primary, 0.03) : "transparent" }}>
-                <td style={{ padding: "11px 12px", color: "#a8a29e", borderBottom: "1px solid #f0efed", verticalAlign: "top" }}>{idx + 1}</td>
-                <td style={{ padding: "11px 12px", borderBottom: "1px solid #f0efed" }}>
-                  <div style={{ fontWeight: 600 }}>{it.description || "—"}</div>
-                  {it.details ? <div style={{ color: "#78716c", fontSize: 12, whiteSpace: "pre-wrap" }}>{it.details}</div> : null}
-                </td>
-                <td style={{ padding: "11px 12px", textAlign: "center", borderBottom: "1px solid #f0efed", verticalAlign: "top" }}>{it.quantity}</td>
-                <td style={{ padding: "11px 12px", textAlign: "center", borderBottom: "1px solid #f0efed", verticalAlign: "top", whiteSpace: "nowrap" }}>{money(it.unit_price)}</td>
-                <td style={{ padding: "11px 12px", textAlign: "center", borderBottom: "1px solid #f0efed", fontWeight: 700, verticalAlign: "top", whiteSpace: "nowrap" }}>
-                  {money((Number(it.quantity) || 0) * (Number(it.unit_price) || 0))}
-                </td>
-              </tr>
+            {common.map((it, idx) => (
+              <ItemRow key={it.id ?? idx} it={it} n={idx + 1} zebra={t !== "minimal" && idx % 2 === 1} primary={primary} />
             ))}
+            {opts.map((o, oi) => {
+              const its = quote.items.filter((it) => it.option === o.id);
+              const ot = calcTotals(quote, o.id);
+              const dim = chosen && chosen !== o.id;
+              const on = chosen === o.id;
+              return [
+                <tr key={`h-${o.id}`} style={{ opacity: dim ? 0.45 : 1 }}>
+                  <td colSpan={5} style={{ padding: "12px 12px 6px", borderBottom: `2px solid ${on ? "#059669" : accent}` }}>
+                    <span style={{ fontWeight: 800, fontSize: 14, color: on ? "#047857" : primary }}>
+                      {on ? "✓ " : ""}אפשרות {["א׳", "ב׳", "ג׳", "ד׳"][oi] ?? oi + 1}: {o.label}
+                    </span>
+                    {on ? <span style={{ fontSize: 12, color: "#047857", fontWeight: 700 }}> · האפשרות שנבחרה</span> : null}
+                  </td>
+                </tr>,
+                ...its.map((it, k) => (
+                  <ItemRow key={it.id ?? `${o.id}-${k}`} it={it} n={common.length + k + 1} zebra={false} primary={primary} dim={!!dim} />
+                )),
+                <tr key={`t-${o.id}`} style={{ opacity: dim ? 0.45 : 1 }}>
+                  <td colSpan={4} style={{ padding: "8px 12px", textAlign: "end", fontWeight: 700, color: "#57534e" }}>
+                    סה״כ לאפשרות {["א׳", "ב׳", "ג׳", "ד׳"][oi] ?? oi + 1}
+                    {quote.vat_enabled ? " כולל מע״מ" : ""}
+                  </td>
+                  <td style={{ padding: "8px 12px", textAlign: "center", fontWeight: 900, whiteSpace: "nowrap", color: on ? "#047857" : primary }}>{money(ot.total)}</td>
+                </tr>,
+              ];
+            })}
             {quote.items.length === 0 ? (
               <tr>
                 <td colSpan={5} style={{ padding: 22, textAlign: "center", color: "#a8a29e" }}>
@@ -340,6 +368,13 @@ export default function QuoteDocument({ business, author, quote, id }: Props) {
       </div>
 
       {/* סיכומים */}
+      {multi && !chosen ? (
+        <div style={{ padding: sectionPad, marginTop: 14 }}>
+          <div style={{ background: hexToRgba(primary, 0.05), borderRadius: t === "classic" ? 0 : 12, padding: "10px 16px", fontWeight: 600, color: "#44403c" }}>
+            ההצעה כוללת {opts.length} אפשרויות. בעת אישור ההצעה בוחרים אפשרות אחת.
+          </div>
+        </div>
+      ) : (
       <div style={{ padding: sectionPad, marginTop: 18, display: "flex", justifyContent: "flex-end" }}>
         <div style={{ width: 300, display: "grid", gap: 6 }}>
           <Row label="סכום ביניים" value={money(totals.subtotal)} />
@@ -370,6 +405,7 @@ export default function QuoteDocument({ business, author, quote, id }: Props) {
           </div>
         </div>
       </div>
+      )}
 
       {/* הערות ותנאים */}
       {quote.notes || quote.terms ? (
@@ -438,6 +474,22 @@ export default function QuoteDocument({ business, author, quote, id }: Props) {
         )}
       </div>
     </div>
+  );
+}
+
+function ItemRow({ it, n, zebra, primary, dim }: { it: QuoteItem; n: number; zebra: boolean; primary: string; dim?: boolean }) {
+  const cell: CSSProperties = { padding: "11px 12px", borderBottom: "1px solid #f0efed", verticalAlign: "top" };
+  return (
+    <tr style={{ background: zebra ? hexToRgba(primary, 0.03) : "transparent", opacity: dim ? 0.45 : 1 }}>
+      <td style={{ ...cell, color: "#a8a29e" }}>{n}</td>
+      <td style={{ ...cell, verticalAlign: undefined }}>
+        <div style={{ fontWeight: 600 }}>{it.description || "—"}</div>
+        {it.details ? <div style={{ color: "#78716c", fontSize: 12, whiteSpace: "pre-wrap" }}>{it.details}</div> : null}
+      </td>
+      <td style={{ ...cell, textAlign: "center" }}>{it.quantity}</td>
+      <td style={{ ...cell, textAlign: "center", whiteSpace: "nowrap" }}>{money(it.unit_price)}</td>
+      <td style={{ ...cell, textAlign: "center", fontWeight: 700, whiteSpace: "nowrap" }}>{money((Number(it.quantity) || 0) * (Number(it.unit_price) || 0))}</td>
+    </tr>
   );
 }
 

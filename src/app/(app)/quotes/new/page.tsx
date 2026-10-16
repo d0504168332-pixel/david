@@ -1,7 +1,7 @@
 import { requireBusiness } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
 import QuoteEditor from "@/components/QuoteEditor";
-import { loadPriceHistory, toDocAuthor, toDocBusiness } from "@/lib/doc-data";
+import { editorExtras, loadPriceHistory, toDocAuthor, toDocBusiness } from "@/lib/doc-data";
 import { draftFromRequest } from "@/lib/request-draft";
 import type { Client, QuoteRequest } from "@/lib/types";
 
@@ -10,6 +10,7 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const { data: clients } = await supabase.from("clients").select("*").eq("business_id", business.id).order("name").returns<Client[]>();
   const history = await loadPriceHistory(supabase, business.id);
+  const extras = await editorExtras(supabase, business, profile);
 
   let initial: unknown = null;
   let priceSources: Record<string, string> = {};
@@ -54,6 +55,7 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
         initial={initial as never}
         history={history}
         priceSources={priceSources}
+        {...extras}
       />
     </>
   );

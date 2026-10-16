@@ -1,13 +1,37 @@
-import type { Quote, QuoteItem, QuoteStatus } from "./types";
+import type { Quote, QuoteItem, QuoteMeta, QuoteStatus, Trip } from "./types";
 
-export function calcTotals(q: {
+type Totalable = {
   items: QuoteItem[];
   discount_type: "percent" | "amount";
   discount_value: number;
   vat_enabled: boolean;
   vat_rate: number;
-}) {
-  const subtotal = q.items.reduce(
+  meta?: QuoteMeta | null;
+};
+
+/** יש בהצעה כמה אפשרויות לבחירה? */
+export function hasOptions(meta: QuoteMeta | null | undefined) {
+  return (meta?.options?.length ?? 0) >= 2;
+}
+
+/** האפשרות שקובעת את הסכום: זו שהלקוח בחר, אחרת הראשונה */
+export function activeOptionId(meta: QuoteMeta | null | undefined) {
+  if (!hasOptions(meta)) return null;
+  const ids = meta!.options!.map((o) => o.id);
+  return meta!.chosen_option && ids.includes(meta!.chosen_option) ? meta!.chosen_option : ids[0];
+}
+
+/** הפריטים של אפשרות מסוימת: פריטים משותפים + הפריטים שלה */
+export function itemsFor(q: { items: QuoteItem[]; meta?: QuoteMeta | null }, optionId?: string | null) {
+  if (!hasOptions(q.meta)) return q.items;
+  const ids = q.meta!.options!.map((o) => o.id);
+  const opt = optionId ?? activeOptionId(q.meta);
+  return q.items.filter((it) => !it.option || !ids.includes(it.option) || it.option === opt);
+}
+
+export function calcTotals(q: Totalable, optionId?: string | null) {
+  const items = itemsFor(q, optionId);
+  const subtotal = items.reduce(
     (s, it) => s + (Number(it.quantity) || 0) * (Number(it.unit_price) || 0),
     0
   );
@@ -18,6 +42,13 @@ export function calcTotals(q: {
   const vat = q.vat_enabled ? (afterDiscount * (Number(q.vat_rate) || 0)) / 100 : 0;
   const total = afterDiscount + vat;
   return { subtotal, discount, afterDiscount, vat, total };
+}
+
+/** כל תאריכי הנסיעה (ראשי + נוספים), ממוינים וללא כפילויות */
+export function tripDates(t: Trip | null | undefined) {
+  if (!t) return [] as string[];
+  const all = [t.date, ...(t.extra_dates ?? [])].filter((d): d is string => !!d);
+  return [...new Set(all)].sort();
 }
 
 export function money(n: number) {

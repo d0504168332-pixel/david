@@ -26,7 +26,33 @@ export type Business = {
   webhook_url: string | null;
   webhook_secret: string | null;
   ops_emails: string | null;
+  pricing: Pricing | null;
+  reminder_days: number;
+  reminder_max: number;
+  notify_on_view: boolean;
+  notify_on_approve: boolean;
   created_at: string;
+};
+
+/** מחירון קבוע לחברת הסעות */
+export type Vehicle = {
+  id: string;
+  name: string; // "מיניבוס 20 מקומות"
+  seats: number;
+  per_km: number; // ₪ לק"מ
+  min_price: number; // מחיר מינימום לנסיעה
+  wait_hour: number; // ₪ לשעת המתנה
+};
+
+export type Pricing = {
+  vehicles?: Vehicle[];
+  night_pct?: number; // תוספת לילה %
+  night_from?: string; // "22:00"
+  night_to?: string; // "06:00"
+  weekend_pct?: number; // תוספת שבת/חג %
+  friday_from?: string; // "15:00" — מאז מתחילה תוספת שבת ביום שישי
+  free_wait_hours?: number; // שעות המתנה שלא מחויבות
+  round_up?: number; // עיגול כלפי מעלה (למשל 10 ₪)
 };
 
 export type Profile = {
@@ -68,7 +94,11 @@ export type QuoteItem = {
   details?: string;
   quantity: number;
   unit_price: number;
+  /** שייך לאפשרות מסוימת (ריק = כלול בכל האפשרויות) */
+  option?: string;
 };
+
+export type QuoteOption = { id: string; label: string };
 
 export type QuoteStatus = "draft" | "sent" | "approved" | "rejected";
 
@@ -102,6 +132,12 @@ export type Quote = {
   approved_at: string | null;
   meta: QuoteMeta;
   request_id: string | null;
+  sent_at?: string | null;
+  viewed_at?: string | null;
+  last_viewed_at?: string | null;
+  view_count?: number;
+  reminded_at?: string | null;
+  reminder_count?: number;
   created_at: string;
   updated_at: string;
 };
@@ -115,9 +151,30 @@ export type Trip = {
   round_trip?: boolean;
   return_time?: string;
   stops?: string;
+  /** תאריכים נוספים לאותה נסיעה (הסעה חוזרת) */
+  extra_dates?: string[];
+  distance_km?: number; // כיוון אחד
+  duration_min?: number; // כיוון אחד
 };
 
-export type QuoteMeta = { trip?: Trip | null };
+export type QuoteMeta = {
+  trip?: Trip | null;
+  /** כמה אפשרויות באותה הצעה — הלקוח בוחר אחת באישור */
+  options?: QuoteOption[];
+  chosen_option?: string | null;
+};
+
+export type QuoteTemplate = {
+  id: string;
+  business_id: string;
+  name: string;
+  title: string | null;
+  items: QuoteItem[];
+  notes: string | null;
+  terms: string | null;
+  meta: QuoteMeta;
+  created_at: string;
+};
 
 export type QuoteRequest = {
   id: string;

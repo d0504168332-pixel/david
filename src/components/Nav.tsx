@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Plus, Users, Building2, UserRound, ShieldCheck, LogOut, MailPlus, Inbox } from "lucide-react";
+import { FileText, Plus, Users, Building2, UserRound, ShieldCheck, LogOut, MailPlus, Inbox, BarChart3, Zap } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 
 type Props = {
@@ -25,7 +25,13 @@ export default function Nav({ user, business, isSuper, isManager, hasBusiness, n
           ...(isTransport ? [{ href: "/requests", label: "בקשות מלקוחות", icon: Inbox, badge: newRequests }] : []),
           { href: "/quotes/import", label: "ממייל להצעה", icon: MailPlus },
           { href: "/clients", label: "לקוחות", icon: Users },
-          ...(isManager || isSuper ? [{ href: "/business", label: "פרטי העסק", icon: Building2 }] : []),
+          ...(isManager || isSuper
+            ? [
+                { href: "/dashboard", label: "דשבורד", icon: BarChart3 },
+                { href: "/automation", label: isTransport ? "מחירון ואוטומציות" : "אוטומציות ותבניות", icon: Zap },
+                { href: "/business", label: "פרטי העסק", icon: Building2 },
+              ]
+            : []),
         ]
       : []),
     { href: "/profile", label: "חתימה ופרופיל", icon: UserRound },
@@ -99,7 +105,7 @@ export default function Nav({ user, business, isSuper, isManager, hasBusiness, n
 
       {/* מובייל — תחתון */}
       <nav className="no-print fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-stone-200 bg-white/95 px-1 pb-[max(env(safe-area-inset-bottom),6px)] pt-1.5 backdrop-blur lg:hidden">
-        {items.filter((it) => it.href !== "/business" && it.href !== "/quotes/new" && it.href !== "/quotes/import").map((it) => {
+        {items.filter((it) => !["/business", "/quotes/new", "/quotes/import", "/automation"].includes(it.href)).map((it) => {
           const Icon = it.icon;
           const on = active(it.href);
           return (

@@ -4,9 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireBusiness } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { calcTotals } from "@/lib/quote";
+import { headers } from "next/headers";
+import { calcTotals, hasOptions } from "@/lib/quote";
 import { onQuoteApproved } from "@/lib/approval";
-import type { QuoteItem, QuoteMeta, QuoteStatus } from "@/lib/types";
+import { notifyOwner } from "@/lib/notify";
+import { getSession } from "@/lib/auth";
+import type { Quote, QuoteItem, QuoteMeta, QuoteStatus } from "@/lib/types";
 
 export type QuoteInput = {
   id?: string;
@@ -50,8 +53,19 @@ export async function saveQuote(input: QuoteInput): Promise<{ id?: string; error
       details: (it.details ?? "").trim(),
       quantity: Number(it.quantity) || 0,
       unit_price: Number(it.unit_price) || 0,
+      ...(typeof it.option === "string" && it.option ? { option: it.option } : {}),
     }));
   if (items.length === 0) return { error: "נא להוסיף לפחות פריט אחד" };
+
+  // אפשרויות: לפחות 2 עם שם, ובחירה קיימת רק אם היא עדיין ברשימה
+  const meta: QuoteMeta = { ...(input.meta ?? {}) };
+  const opts = (meta.options ?? []).filter((o) => o && o.id).map((o) => ({ id: String(o.id).slice(0, 40), label: (o.label ?? "").trim().slice(0, 120) || "אפשרות" }));
+  if (opts.length >= 2) meta.options = opts;
+  else {
+    delete meta.options;
+    meta.chosen_option = null;
+  }
+  if (meta.chosen_option && !opts.some((o) => o.id === meta.chosen_option)) meta.chosen_option = null;
 
   let client_id = input.client_id || null;
   if (!client_id && input.save_client) {
@@ -73,7 +87,7 @@ export async function saveQuote(input: QuoteInput): Promise<{ id?: string; error
     client_id = c.id;
   }
 
-  const totals = calcTotals({ ...input, items });
+  const totals = calcTotals({ ...input, items, meta });
   const row = {
     business_id: business.id,
     client_id,
@@ -96,7 +110,7 @@ export async function saveQuote(input: QuoteInput): Promise<{ id?: string; error
     total: totals.total,
     notes: clean(input.notes),
     terms: clean(input.terms),
-    meta: input.meta ?? {},
+    meta,
   };
 
   if (input.id) {
@@ -125,6 +139,7 @@ export async function saveQuote(input: QuoteInput): Promise<{ id?: string; error
 export async function setQuoteStatus(id: string, status: QuoteStatus) {
   const { supabase } = await requireBusiness();
   const patch: Record<string, unknown> = { status };
+  if (status === "sent") patch.sent_at = new Date().toISOString();
   if (status !== "approved") {
     patch.approved_by_name = null;
     patch.approved_at = null;
@@ -146,7 +161,7 @@ export async function resendWebhook(id: string) {
 
 export async function markSent(id: string) {
   const { supabase } = await requireBusiness();
-  await supabase.from("quotes").update({ status: "sent" }).eq("id", id).eq("status", "draft");
+  await supabase.from("quotes").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", id).eq("status", "draft");
   revalidatePath(`/quotes/${id}`);
 }
 
@@ -183,20 +198,47 @@ export async function duplicateQuote(id: string) {
   redirect(`/quotes/${data.id}/edit`);
 }
 
-/** אישור הצעה ע"י הלקוח מהקישור הציבורי */
-export async function approveByToken(token: string, name: string): Promise<{ ok?: boolean; error?: string }> {
+async function origin() {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  return host ? `${h.get("x-forwarded-proto") ?? "https"}://${host}` : "";
+}
+
+/** אישור הצעה ע"י הלקוח מהקישור הציבורי (כולל בחירת אפשרות, אם יש) */
+export async function approveByToken(token: string, name: string, optionId?: string | null): Promise<{ ok?: boolean; error?: string }> {
   const n = name.trim();
   if (n.length < 2) return { error: "נא להקליד שם מלא" };
   const admin = createAdminClient();
-  const { data: q } = await admin.from("quotes").select("id,status").eq("share_token", token).maybeSingle();
+  const { data: q } = await admin.from("quotes").select("*").eq("share_token", token).maybeSingle<Quote>();
   if (!q) return { error: "ההצעה לא נמצאה" };
   if (q.status === "approved") return { ok: true };
-  const { error } = await admin
-    .from("quotes")
-    .update({ status: "approved", approved_by_name: n.slice(0, 80), approved_at: new Date().toISOString() })
-    .eq("id", q.id);
+  const patch: Record<string, unknown> = { status: "approved", approved_by_name: n.slice(0, 80), approved_at: new Date().toISOString() };
+  if (hasOptions(q.meta)) {
+    if (!optionId || !q.meta.options!.some((o) => o.id === optionId)) return { error: "נא לבחור אחת מהאפשרויות" };
+    const meta = { ...q.meta, chosen_option: optionId };
+    const t = calcTotals({ ...q, meta });
+    Object.assign(patch, { meta, subtotal: t.subtotal, total: t.total });
+  }
+  const { error } = await admin.from("quotes").update(patch).eq("id", q.id);
   if (error) return { error: "האישור נכשל, נסו שוב" };
-  await onQuoteApproved(q.id);
+  await Promise.allSettled([onQuoteApproved(q.id), notifyOwner(q.id, "approved", await origin())]);
   revalidatePath(`/q/${token}`);
   return { ok: true };
+}
+
+/** הלקוח פתח את ההצעה (נקרא מהדפדפן, כך שתצוגה מקדימה של וואטסאפ לא נספרת) */
+export async function markViewed(token: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(token)) return;
+  const admin = createAdminClient();
+  const { data: q } = await admin.from("quotes").select("id,business_id,viewed_at,view_count").eq("share_token", token).maybeSingle();
+  if (!q) return;
+  // צפייה של אנשי העסק עצמם לא נחשבת
+  const s = await getSession().catch(() => null);
+  if (s?.profile && (s.profile.business_id === q.business_id || s.profile.is_super_admin)) return;
+  const now = new Date().toISOString();
+  await admin
+    .from("quotes")
+    .update({ viewed_at: q.viewed_at ?? now, last_viewed_at: now, view_count: (q.view_count ?? 0) + 1 })
+    .eq("id", q.id);
+  if (!q.viewed_at) await notifyOwner(q.id, "viewed", await origin());
 }

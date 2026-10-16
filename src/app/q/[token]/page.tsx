@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import QuoteDocument from "@/components/doc/QuoteDocument";
 import DocPreview from "@/components/doc/DocPreview";
 import { AUTHOR_COLS, toDocAuthor, toDocBusiness } from "@/lib/doc-data";
-import { calcTotals, formatDate, money, quoteNumber } from "@/lib/quote";
+import { calcTotals, formatDate, hasOptions, money, quoteNumber } from "@/lib/quote";
 import type { Business, Profile, Quote } from "@/lib/types";
 import PublicActions from "./PublicActions";
 
@@ -45,6 +45,10 @@ export default async function PublicQuote({ params }: { params: Promise<{ token:
   const { quote, business, author } = d;
   const num = quoteNumber(business.quote_prefix, quote.number);
   const totals = calcTotals(quote);
+  const multi = hasOptions(quote.meta);
+  const chosen = multi ? quote.meta.options!.find((o) => o.id === quote.meta.chosen_option) ?? null : null;
+  const optionList = multi ? quote.meta.options!.map((o) => ({ id: o.id, label: o.label, total: money(calcTotals(quote, o.id).total) })) : [];
+  const minTotal = multi ? Math.min(...quote.meta.options!.map((o) => calcTotals(quote, o.id).total)) : totals.total;
   const expired = quote.valid_until && quote.valid_until < new Date().toISOString().slice(0, 10);
 
   return (
@@ -66,8 +70,8 @@ export default async function PublicQuote({ params }: { params: Promise<{ token:
             </div>
           </div>
           <div className="text-left">
-            <div className="text-xs text-stone-500">סה״כ</div>
-            <div className="text-lg font-extrabold tabular-nums">{money(totals.total)}</div>
+            <div className="text-xs text-stone-500">{multi && !chosen ? "החל מ-" : "סה״כ"}</div>
+            <div className="text-lg font-extrabold tabular-nums">{money(multi && !chosen ? minTotal : totals.total)}</div>
           </div>
         </div>
       </header>
@@ -84,6 +88,8 @@ export default async function PublicQuote({ params }: { params: Promise<{ token:
             approvedBy={quote.approved_by_name}
             expired={!!expired}
             fileName={`הצעת מחיר ${num} - ${business.name}.pdf`}
+            options={optionList}
+            chosenLabel={chosen?.label ?? null}
             contact={{ name: author?.full_name ?? business.name, phone: author?.phone ?? business.phone, email: author?.email ?? business.email }}
           />
         </aside>

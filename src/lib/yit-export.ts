@@ -2,6 +2,7 @@
 // טקסט מופרד בטאבים, 33 עמודות, בלי שורת כותרת, קידוד Windows-1255, סוף שורה CRLF,
 // ירידת שורה בתוך שדה נכתבת כ-"^l".
 import type { Quote } from "./types";
+import { tripDates } from "./quote";
 
 const COLS = 33;
 
@@ -70,8 +71,12 @@ export function yitFields(q: Quote, opts: { tripType?: string } = {}) {
   return f;
 }
 
+/** שורה לכל תאריך נסיעה (הסעה חוזרת = כמה שורות) */
 export function yitText(q: Quote, opts?: { tripType?: string }) {
-  return yitFields(q, opts).join("\t") + "\r\n";
+  const t = q.meta?.trip ?? {};
+  const dates = tripDates(t);
+  const list = dates.length ? dates : [t.date];
+  return list.map((d) => yitFields({ ...q, meta: { ...q.meta, trip: { ...t, date: d } } }, opts).join("\t") + "\r\n").join("");
 }
 
 // ---- קידוד Windows-1255 (עברית) ----

@@ -59,6 +59,20 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ id: 
           {author?.full_name ? ` · הופקה ע״י ${author.full_name}` : ""}
           {quote.approved_by_name ? ` · אושרה ע״י ${quote.approved_by_name}` : ""}
         </p>
+        <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
+          {quote.view_count ? (
+            <span className="rounded-full bg-sky-50 px-2.5 py-1 text-sky-800 ring-1 ring-sky-200">
+              👀 הלקוח פתח {quote.view_count === 1 ? "פעם אחת" : `${quote.view_count} פעמים`} · לאחרונה {new Date(quote.last_viewed_at ?? quote.viewed_at!).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" })}
+            </span>
+          ) : quote.status === "sent" ? (
+            <span className="rounded-full bg-stone-100 px-2.5 py-1 text-stone-600 ring-1 ring-stone-200">הלקוח עוד לא פתח את ההצעה</span>
+          ) : null}
+          {quote.reminder_count ? (
+            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-800 ring-1 ring-amber-200">
+              נשלחו {quote.reminder_count} תזכורות · אחרונה {formatDate(quote.reminded_at)}
+            </span>
+          ) : null}
+        </div>
       </div>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] print:block">
         <div className="print-area rounded-2xl bg-stone-200/50 p-3 sm:p-6 print:bg-transparent print:p-0">
@@ -82,6 +96,7 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ id: 
             sync={sync}
             tripCsv={csv}
             yitB64={yitB64}
+            canRemind={quote.status === "sent"}
           />
         </div>
       </div>

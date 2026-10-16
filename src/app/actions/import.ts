@@ -6,6 +6,7 @@ import { parseRequestHeuristic, type ParsedRequest } from "@/lib/parse-request";
 import { parseWithAI } from "@/lib/ai-parse";
 import { findSimilar, sameClientHistory } from "@/lib/price-check";
 import type { Client, QuoteItem } from "@/lib/types";
+import { extractTrip } from "@/lib/trip-parse";
 
 export type ImportResult = {
   error?: string;
@@ -20,7 +21,10 @@ export async function parseEmailRequest(text: string): Promise<ImportResult> {
 
   const ai = await parseWithAI(text);
   const parsed = ai ?? parseRequestHeuristic(text);
-  if (parsed.items.length === 0) parsed.items.push({ description: parsed.title || "", quantity: 1 });
+  const transport = business.business_type === "transport";
+  const trip = transport ? (ai?.trip && (ai.trip.origin || ai.trip.destination) ? ai.trip : extractTrip(text)) : null;
+  if (parsed.items.length === 0 && !trip) parsed.items.push({ description: parsed.title || "", quantity: 1 });
+  if (parsed.items.length === 0) parsed.items.push({ description: "", quantity: 1 });
 
   // התאמה ללקוח שמור (לפי מייל, ואז לפי שם)
   const { data: clients } = await supabase.from("clients").select("*").eq("business_id", business.id).returns<Client[]>();
@@ -57,6 +61,7 @@ export async function parseEmailRequest(text: string): Promise<ImportResult> {
       client_email: parsed.client_email || match?.email || "",
       client_address: parsed.client_address || match?.address || "",
       items,
+      trip,
     },
   };
 }

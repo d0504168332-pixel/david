@@ -10,6 +10,8 @@ export type ParsedRequest = {
   items: { description: string; details?: string; quantity: number }[];
   /** מידע פנימי מהמייל (מועדים, תקציב) — לא נכנס להצעה */
   hints: string;
+  /** פרטי נסיעה (לחברות הסעות) */
+  trip?: import("./types").Trip | null;
 };
 
 const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;

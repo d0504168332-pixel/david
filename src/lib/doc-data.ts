@@ -43,6 +43,22 @@ export function toDocAuthor(p: Partial<Profile> | null) {
 }
 
 import type { PastPrice } from "./price-check";
+import { TRANSPORT_TEMPLATES, type TemplateLike } from "./templates";
+import type { QuoteTemplate } from "./types";
+
+/** נתונים נוספים לעורך: מחירון, תבניות והרשאה לערוך מחירון */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function editorExtras(supabase: any, business: Business, profile: Profile) {
+  const { data } = await supabase.from("quote_templates").select("*").eq("business_id", business.id).order("name");
+  const saved: TemplateLike[] = ((data ?? []) as QuoteTemplate[]).map((t) => ({ ...t, items: t.items ?? [], meta: t.meta ?? {} }));
+  const transport = business.business_type === "transport";
+  const builtins = transport ? TRANSPORT_TEMPLATES.filter((b) => !saved.some((s) => s.name === b.name)) : [];
+  return {
+    pricing: transport ? business.pricing ?? null : null,
+    templates: [...saved, ...builtins],
+    canEditPricing: transport && (profile.business_role === "manager" || profile.is_super_admin),
+  };
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function loadPriceHistory(supabase: any, businessId: string, excludeId?: string): Promise<PastPrice[]> {

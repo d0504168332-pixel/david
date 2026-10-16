@@ -99,3 +99,59 @@ export async function updateMyProfile(input: ProfileInput): Promise<FormState> {
   revalidatePath("/", "layout");
   return { ok: "הפרופיל נשמר" };
 }
+
+// ---------- מחירון ואוטומציות (מנהל העסק) ----------
+export type AutomationInput = {
+  pricing: import("@/lib/types").Pricing | null;
+  reminder_days: number;
+  reminder_max: number;
+  notify_on_view: boolean;
+  notify_on_approve: boolean;
+};
+
+const num = (v: unknown, min: number, max: number, dflt: number) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dflt;
+};
+const hhmm = (v: unknown, dflt: string) => (typeof v === "string" && /^\d{1,2}:\d{2}$/.test(v) ? v : dflt);
+
+export async function saveAutomation(input: AutomationInput): Promise<FormState> {
+  const { supabase, profile, business } = await requireBusiness();
+  if (profile.business_role !== "manager" && !profile.is_super_admin) return { error: "אין הרשאה" };
+  const row: Record<string, unknown> = {
+    reminder_days: Math.round(num(input.reminder_days, 0, 60, 3)),
+    reminder_max: Math.round(num(input.reminder_max, 1, 5, 2)),
+    notify_on_view: !!input.notify_on_view,
+    notify_on_approve: !!input.notify_on_approve,
+  };
+  if (business.business_type === "transport" && input.pricing) {
+    const p = input.pricing;
+    const vehicles = (p.vehicles ?? [])
+      .filter((v) => v && String(v.name ?? "").trim())
+      .slice(0, 12)
+      .map((v, i) => ({
+        id: String(v.id || `v${i}`).slice(0, 40),
+        name: String(v.name).trim().slice(0, 60),
+        seats: Math.round(num(v.seats, 1, 100, 50)),
+        per_km: num(v.per_km, 0, 1000, 0),
+        min_price: num(v.min_price, 0, 100000, 0),
+        wait_hour: num(v.wait_hour, 0, 10000, 0),
+      }));
+    if (!vehicles.length) return { error: "נא להגדיר לפחות סוג רכב אחד" };
+    row.pricing = {
+      vehicles,
+      night_pct: num(p.night_pct, 0, 300, 0),
+      night_from: hhmm(p.night_from, "22:00"),
+      night_to: hhmm(p.night_to, "06:00"),
+      weekend_pct: num(p.weekend_pct, 0, 300, 0),
+      friday_from: hhmm(p.friday_from, "15:00"),
+      free_wait_hours: num(p.free_wait_hours, 0, 24, 0),
+      round_up: num(p.round_up, 0, 1000, 0),
+    };
+  }
+  const { error } = await supabase.from("businesses").update(row).eq("id", business.id);
+  if (error) return { error: "השמירה נכשלה: " + error.message };
+  revalidatePath("/automation");
+  revalidatePath("/quotes", "layout");
+  return { ok: "ההגדרות נשמרו" };
+}

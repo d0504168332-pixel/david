@@ -23,6 +23,7 @@ type Props = {
   sync?: { label: string; ok?: boolean; at?: string; code?: number | null }[];
   tripCsv?: string | null;
   yitB64?: string | null;
+  canRemind?: boolean;
 };
 
 export default function QuoteActions(p: Props) {
@@ -49,6 +50,12 @@ export default function QuoteActions(p: Props) {
     `מצורפת הצעת מחיר מס׳ ${p.number} מ${p.businessName} על סך ${money(p.total)}.\n` +
     `לצפייה, הורדה ואישור ההצעה:\n${link}\n\n` +
     `בברכה,\n${p.authorName}`;
+
+  const reminder =
+    `שלום ${p.clientName},\n` +
+    `רצינו לוודא שקיבלת את הצעת המחיר מס׳ ${p.number} מ${p.businessName}.\n` +
+    `אפשר לצפות ולאשר כאן:\n${link}\n\n` +
+    `נשמח לענות על כל שאלה,\n${p.authorName}`;
 
   const run = async (key: string, fn: () => Promise<void>) => {
     setBusy(key);
@@ -117,6 +124,14 @@ export default function QuoteActions(p: Props) {
             <Printer className="size-4" /> הדפסה
           </button>
         </div>
+        {p.canRemind ? (
+          <button
+            className="btn-ghost mt-2 w-full"
+            onClick={() => window.open(`https://wa.me/${toIntlPhone(p.clientPhone)}?text=${encodeURIComponent(reminder)}`, "_blank", "noopener")}
+          >
+            <MessageCircle className="size-4" /> תזכורת בוואטסאפ
+          </button>
+        ) : null}
         <p className="mt-3 text-xs leading-relaxed text-stone-500">
           הלקוח מקבל קישור לדף מעוצב שבו אפשר לצפות, להוריד PDF ולאשר את ההצעה בלחיצה.
         </p>

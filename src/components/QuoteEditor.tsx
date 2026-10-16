@@ -2,13 +2,17 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, Eye, PencilLine, Plus, Save, Trash2, AlignRight, TriangleAlert, TrendingUp, TrendingDown, History, Bus } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, PencilLine, Plus, Save, Trash2, AlignRight, TriangleAlert, TrendingUp, TrendingDown, History, Bus, Layers, LayoutTemplate, BookmarkPlus } from "lucide-react";
+import TripPanel from "@/components/TripPanel";
+import { planDescription, type PricePlan } from "@/lib/pricing";
+import { saveTemplate } from "@/app/actions/templates";
+import type { TemplateLike } from "@/lib/templates";
 import { checkPrice, sameClientHistory, type PastPrice } from "@/lib/price-check";
 import QuoteDocument, { type DocAuthor, type DocBusiness } from "@/components/doc/QuoteDocument";
 import DocPreview from "@/components/doc/DocPreview";
 import { saveQuote, type QuoteInput } from "@/app/actions/quotes";
-import { addDays, calcTotals, money, newItem, todayStr, STATUS_LABEL } from "@/lib/quote";
-import type { Client, Quote, QuoteItem, QuoteStatus, Trip } from "@/lib/types";
+import { addDays, calcTotals, formatDate, hasOptions, money, newItem, todayStr, tripDates, STATUS_LABEL } from "@/lib/quote";
+import type { Client, Pricing, Quote, QuoteItem, QuoteMeta, QuoteOption, QuoteStatus, Trip } from "@/lib/types";
 
 type Props = {
   business: DocBusiness & { vat_rate: number; default_notes: string | null; default_terms: string | null; request_form_type?: string };
@@ -17,9 +21,22 @@ type Props = {
   history?: PastPrice[];
   priceSources?: Record<string, string>;
   initial?: Quote | null;
+  pricing?: Pricing | null;
+  templates?: TemplateLike[];
+  canEditPricing?: boolean;
 };
 
-export default function QuoteEditor({ business, author, clients, initial, history = [], priceSources = {} }: Props) {
+const rid = () => Math.random().toString(36).slice(2, 10);
+const OPTION_NAMES = ["א׳", "ב׳", "ג׳", "ד׳"];
+// שורה שנוצרה מהמחירון: auto:<אפשרות>:<מספר רכבים>:<מזהה>
+const isAuto = (it: QuoteItem) => it.id.startsWith("auto:");
+const autoCount = (it: QuoteItem) => Number(it.id.split(":")[2]) || 1;
+const datesNote = (t: Trip | null | undefined) => {
+  const d = tripDates(t);
+  return d.length > 1 ? `${d.length} תאריכים: ${d.map((x) => formatDate(x).slice(0, 5)).join(", ")}` : "";
+};
+
+export default function QuoteEditor({ business, author, clients, initial, history = [], priceSources = {}, pricing = null, templates = [], canEditPricing = false }: Props) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +84,92 @@ export default function QuoteEditor({ business, author, clients, initial, histor
     });
 
   const totals = useMemo(() => calcTotals(q), [q]);
+  const options = q.meta?.options ?? [];
+  const multi = hasOptions(q.meta);
+  const nDates = Math.max(1, tripDates(q.meta?.trip).length);
+
+  // שינוי מספר התאריכים מעדכן את הכמות בשורות שנוצרו מהמחירון
+  useEffect(() => {
+    setQ((p) => {
+      const note = datesNote(p.meta?.trip);
+      let changed = false;
+      const items = p.items.map((it) => {
+        if (!isAuto(it)) return it;
+        const quantity = autoCount(it) * nDates;
+        if (it.quantity === quantity && (it.details ?? "") === note) return it;
+        changed = true;
+        return { ...it, quantity, details: note };
+      });
+      return changed ? { ...p, items } : p;
+    });
+  }, [nDates]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const setMeta = (patch: Partial<QuoteMeta>) => setQ((p) => ({ ...p, meta: { ...p.meta, ...patch } }));
+  const autoItem = (plan: PricePlan, trip: Trip, option?: string): QuoteItem => ({
+    id: `auto:${option ?? "main"}:${plan.count}:${rid()}`,
+    description: planDescription(plan, trip),
+    details: datesNote(trip),
+    quantity: plan.count * nDates,
+    unit_price: plan.perVehicle,
+    ...(option ? { option } : {}),
+  });
+  // שורות שהמחירון מחליף: שורות מחירון קודמות, שורות ריקות, ושורת "הסעה" בלי מחיר (מבקשה)
+  const keepItems = (items: QuoteItem[]) =>
+    items.filter((it) => !isAuto(it) && (Number(it.unit_price) > 0 || (it.description.trim() && !/^הסעה/.test(it.description.trim()))));
+  const applyPlan = (plan: PricePlan) =>
+    setQ((p) => {
+      const trip = p.meta?.trip ?? {};
+      const rest = keepItems(p.items).map(({ option: _o, ...it }) => it);
+      return { ...p, items: [autoItem(plan, trip), ...rest], meta: { ...p.meta, options: undefined, chosen_option: null }, title: p.title || autoTitle(trip) };
+    });
+  const applyOptions = (plans: PricePlan[]) =>
+    setQ((p) => {
+      const trip = p.meta?.trip ?? {};
+      const opts: QuoteOption[] = plans.map((pl, i) => ({ id: `o${i + 1}`, label: pl.label }));
+      const rest = keepItems(p.items).map(({ option: _o, ...it }) => it);
+      return {
+        ...p,
+        items: [...plans.map((pl, i) => autoItem(pl, trip, opts[i].id)), ...rest],
+        meta: { ...p.meta, options: opts, chosen_option: null },
+        title: p.title || autoTitle(trip),
+      };
+    });
+  const toggleOptions = (on: boolean) =>
+    setQ((p) =>
+      on
+        ? { ...p, meta: { ...p.meta, options: [{ id: "o1", label: "אפשרות א׳" }, { id: "o2", label: "אפשרות ב׳" }], chosen_option: null } }
+        : { ...p, items: p.items.map(({ option: _o, ...it }) => it), meta: { ...p.meta, options: undefined, chosen_option: null } }
+    );
+
+  // תבניות
+  const [tplOpen, setTplOpen] = useState(false);
+  const [tplName, setTplName] = useState("");
+  const [tplMsg, setTplMsg] = useState<string | null>(null);
+  const applyTemplate = (id: string) => {
+    const t = templates.find((x) => x.id === id);
+    if (!t) return;
+    setQ((p) => ({
+      ...p,
+      title: t.title ?? p.title,
+      items: t.items.length ? t.items.map((i) => ({ ...i, id: rid(), option: undefined })) : p.items,
+      notes: t.notes ?? p.notes,
+      terms: t.terms ?? p.terms,
+      meta: t.meta?.trip ? { ...p.meta, trip: { ...(p.meta?.trip ?? {}), ...t.meta.trip } } : p.meta,
+    }));
+  };
+  const onSaveTemplate = () => {
+    setTplMsg(null);
+    start(async () => {
+      const r = await saveTemplate({ name: tplName, title: q.title, items: q.items, notes: q.notes, terms: q.terms, meta: q.meta });
+      if (r.error) setTplMsg(r.error);
+      else {
+        setTplMsg(`נשמרה התבנית "${tplName.trim()}"`);
+        setTplOpen(false);
+        setTplName("");
+        router.refresh();
+      }
+    });
+  };
   const priceChecks = useMemo(
     () => {
       // ההשוואה היא רק מול הצעות קודמות של אותו לקוח
@@ -153,6 +256,21 @@ export default function QuoteEditor({ business, author, clients, initial, histor
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
         {/* ---------- טופס ---------- */}
         <div className={`space-y-5 ${mobileTab === "preview" ? "hidden xl:block" : ""}`}>
+          {!initial?.id && templates.length ? (
+            <div className="card flex flex-wrap items-center gap-3 p-4">
+              <LayoutTemplate className="size-5 text-brand" />
+              <span className="font-bold">התחלה מתבנית</span>
+              <select className="field w-auto min-w-48 flex-1" defaultValue="" onChange={(e) => e.target.value && applyTemplate(e.target.value)}>
+                <option value="">בחירת תבנית…</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                    {t.builtin ? " (מובנית)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           <Section title="לקוח" step={1}>
             {clients.length > 0 ? (
               <div className="mb-4">
@@ -217,7 +335,14 @@ export default function QuoteEditor({ business, author, clients, initial, histor
 
           {q.meta?.trip ? (
             <Section title="פרטי הנסיעה" step={<Bus className="size-4" />}>
-              <TripFields trip={q.meta.trip} onChange={(trip) => set("meta", { ...q.meta, trip })} />
+              <TripPanel
+                trip={q.meta.trip}
+                onChange={(trip) => setMeta({ trip })}
+                pricing={pricing}
+                onApplyPlan={applyPlan}
+                onApplyOptions={applyOptions}
+                canEditPricing={canEditPricing}
+              />
               <label className="mt-3 flex items-center gap-2 text-sm font-semibold text-stone-500">
                 <input type="checkbox" className="size-4" checked={false} onChange={() => set("meta", { ...q.meta, trip: null })} />
                 ללא פרטי נסיעה בהצעה הזו
@@ -227,6 +352,54 @@ export default function QuoteEditor({ business, author, clients, initial, histor
             <button type="button" className="btn-ghost w-full" onClick={() => set("meta", { ...q.meta, trip: {} })}>+ הוספת פרטי נסיעה</button>
           ) : null}
 
+          <Section title="אפשרויות לבחירת הלקוח" step={<Layers className="size-4" />}>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-stone-600">
+                {multi ? "הלקוח יראה את כל האפשרויות ויבחר אחת כשהוא מאשר." : "למשל: אוטובוס 50 מקומות מול שני מיניבוסים — באותה הצעה."}
+              </p>
+              <Toggle checked={multi} onChange={toggleOptions} />
+            </div>
+            {multi ? (
+              <div className="mt-3 space-y-2">
+                {options.map((o, i) => (
+                  <div key={o.id} className="flex items-center gap-2">
+                    <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-brand/10 text-sm font-bold text-brand">{OPTION_NAMES[i] ?? i + 1}</span>
+                    <input
+                      className="field"
+                      value={o.label}
+                      onChange={(e) => setMeta({ options: options.map((x) => (x.id === o.id ? { ...x, label: e.target.value } : x)) })}
+                    />
+                    <span className="w-28 shrink-0 text-left text-sm font-bold tabular-nums">{money(calcTotals(q, o.id).total)}</span>
+                    <IconBtn
+                      title="הסרת אפשרות"
+                      danger
+                      disabled={options.length <= 2}
+                      onClick={() =>
+                        setQ((p) => ({
+                          ...p,
+                          items: p.items.filter((it) => it.option !== o.id),
+                          meta: { ...p.meta, options: options.filter((x) => x.id !== o.id) },
+                        }))
+                      }
+                    >
+                      <Trash2 className="size-4" />
+                    </IconBtn>
+                  </div>
+                ))}
+                {options.length < 4 ? (
+                  <button
+                    type="button"
+                    className="text-sm font-bold text-brand"
+                    onClick={() => setMeta({ options: [...options, { id: `o${Date.now().toString(36)}`, label: `אפשרות ${OPTION_NAMES[options.length]}` }] })}
+                  >
+                    + אפשרות נוספת
+                  </button>
+                ) : null}
+                <p className="text-xs text-stone-500">בכל פריט בוחרים לאיזו אפשרות הוא שייך. פריט "בכל האפשרויות" נכלל בכולן.</p>
+              </div>
+            ) : null}
+          </Section>
+
           <Section title="פריטים ושירותים" step={3}>
             <div className="space-y-3">
               {q.items.map((it, idx) => (
@@ -235,6 +408,16 @@ export default function QuoteEditor({ business, author, clients, initial, histor
                     <span className="mt-2.5 grid size-6 shrink-0 place-items-center rounded-full bg-brand/10 text-xs font-bold text-brand">{idx + 1}</span>
                     <div className="min-w-0 flex-1 space-y-2">
                       <input className="field" placeholder="תיאור הפריט / השירות" value={it.description} onChange={(e) => setItem(it.id, { description: e.target.value })} />
+                      {multi ? (
+                        <select className="field h-9 py-1 text-sm" value={it.option && options.some((o) => o.id === it.option) ? it.option : ""} onChange={(e) => setItem(it.id, { option: e.target.value || undefined })}>
+                          <option value="">בכל האפשרויות</option>
+                          {options.map((o, i) => (
+                            <option key={o.id} value={o.id}>
+                              רק באפשרות {OPTION_NAMES[i] ?? i + 1}: {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : null}
                       {openDetails[it.id] ? (
                         <textarea className="field min-h-16 text-sm" placeholder="פירוט נוסף (אופציונלי)" value={it.details ?? ""} onChange={(e) => setItem(it.id, { details: e.target.value })} />
                       ) : null}
@@ -319,6 +502,7 @@ export default function QuoteEditor({ business, author, clients, initial, histor
               <Line label="סכום ביניים" value={money(totals.subtotal)} />
               {totals.discount > 0 ? <Line label="הנחה" value={`- ${money(totals.discount)}`} /> : null}
               {q.vat_enabled ? <Line label={`מע״מ ${q.vat_rate}%`} value={money(totals.vat)} /> : null}
+              {multi ? <div className="text-xs font-semibold text-stone-500">הסכומים לפי {options[0]?.label}. לכל אפשרות יש סה״כ משלה.</div> : null}
               <div className="flex justify-between border-t border-stone-200 pt-2 text-base font-extrabold">
                 <span>סה״כ לתשלום</span>
                 <span className="tabular-nums">{money(totals.total)}</span>
@@ -362,7 +546,18 @@ export default function QuoteEditor({ business, author, clients, initial, histor
               </span>
             ) : <span className="text-stone-500">סה״כ: <b className="text-ink tabular-nums">{money(totals.total)}</b></span>}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {tplOpen ? (
+              <span className="flex items-center gap-1.5">
+                <input className="field h-10 w-40" autoFocus placeholder="שם התבנית" value={tplName} onChange={(e) => setTplName(e.target.value)} />
+                <button type="button" className="btn-ghost" disabled={pending || !tplName.trim()} onClick={onSaveTemplate}>שמירה</button>
+              </span>
+            ) : (
+              <button type="button" className="btn-ghost" title="שמירת הפריטים והתנאים כתבנית לשימוש חוזר" onClick={() => setTplOpen(true)}>
+                <BookmarkPlus className="size-4" /> <span className="hidden sm:inline">שמירה כתבנית</span>
+              </button>
+            )}
+            {tplMsg ? <span className="text-xs font-semibold text-emerald-700">{tplMsg}</span> : null}
             <button type="button" className="btn-ghost" onClick={() => router.back()}>ביטול</button>
             <button type="button" className="btn-primary" onClick={onSave} disabled={pending}>
               {pending ? <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Save className="size-4" />}
@@ -477,42 +672,6 @@ function PriceHint({ check, prefix, clientName, onUse }: { check: Check; prefix:
   );
 }
 
-function TripFields({ trip, onChange }: { trip: Trip; onChange: (t: Trip) => void }) {
-  const set = (k: keyof Trip, v: string | number | boolean | undefined) => onChange({ ...trip, [k]: v });
-  const F = ({ k, label, type = "text" }: { k: keyof Trip; label: string; type?: string }) => (
-    <div>
-      <label className="label">{label}</label>
-      <input
-        type={type}
-        className="field"
-        value={(trip[k] as string | number | undefined) ?? ""}
-        onChange={(e) => set(k, type === "number" ? (e.target.value ? Number(e.target.value) : undefined) : e.target.value)}
-      />
-    </div>
-  );
-  return (
-    <div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {F({ k: "origin", label: "נקודת יציאה" })}
-        {F({ k: "destination", label: "יעד" })}
-        {F({ k: "date", label: "תאריך", type: "date" })}
-        {F({ k: "time", label: "שעת יציאה", type: "time" })}
-        {F({ k: "passengers", label: "מספר נוסעים", type: "number" })}
-        {F({ k: "stops", label: "עצירות" })}
-      </div>
-      <div className="mt-3 flex flex-wrap items-center gap-4">
-        <label className="flex items-center gap-2 text-sm font-semibold text-stone-700">
-          <input type="checkbox" className="size-4 accent-[var(--brand)]" checked={!!trip.round_trip} onChange={(e) => set("round_trip", e.target.checked)} />
-          הלוך-חזור
-        </label>
-        {trip.round_trip ? (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-stone-500">שעת חזור</span>
-            <input type="time" className="field w-32" value={trip.return_time ?? ""} onChange={(e) => set("return_time", e.target.value)} />
-          </div>
-        ) : null}
-      </div>
-      <p className="mt-2 text-xs text-stone-500">פרטים אלה מופיעים בהצעה, ונשלחים אוטומטית למערכת ההסעות כשהלקוח מאשר.</p>
-    </div>
-  );
+function autoTitle(t: Trip) {
+  return t.destination ? `הסעה ל${t.destination}${t.date ? ` – ${formatDate(t.date)}` : ""}` : "";
 }

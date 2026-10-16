@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     client_email: (parsed.client_email || fromEmail || null)?.slice(0, 120) ?? null,
     request_text: text.trim().slice(0, 6000) || null,
     items: isSystem ? [] : parsed.items.filter((i) => i.description).slice(0, 50).map((i) => ({ description: i.description.slice(0, 200), quantity: i.quantity || 1 })),
-    trip: isSystem ? null : extractTrip(`${subject}\n${text}`),
+    trip: isSystem ? null : (parsed.trip ?? extractTrip(`${subject}\n${text}`)),
     notes: parsed.hints || null,
   });
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });

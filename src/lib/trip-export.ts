@@ -1,13 +1,16 @@
-import { calcTotals, formatDate, quoteNumber } from "./quote";
+import { calcTotals, formatDate, itemsFor, quoteNumber, tripDates } from "./quote";
 import type { Business, Quote } from "./types";
 
 /** שדות הנסיעה בסדר קבוע — לייבוא למערכת ההסעות (YIT) או לאקסל */
 export function tripRow(q: Quote, b: Pick<Business, "quote_prefix">) {
   const t = q.meta?.trip ?? {};
   const tot = calcTotals(q);
+  const dates = tripDates(t);
+  const chosen = q.meta?.options?.find((o) => o.id === q.meta?.chosen_option);
   return {
     "מספר הצעה": quoteNumber(b.quote_prefix, q.number),
-    "תאריך נסיעה": t.date ? formatDate(t.date) : "",
+    "תאריך נסיעה": dates.length > 1 ? dates.map((d) => formatDate(d)).join(", ") : t.date ? formatDate(t.date) : "",
+    "מספר תאריכים": dates.length > 1 ? String(dates.length) : "",
     "שעת יציאה": t.time ?? "",
     "מוצא": t.origin ?? "",
     "יעד": t.destination ?? "",
@@ -19,7 +22,9 @@ export function tripRow(q: Quote, b: Pick<Business, "quote_prefix">) {
     "איש קשר": q.client_contact ?? "",
     "טלפון": q.client_phone ?? "",
     "אימייל": q.client_email ?? "",
-    "תיאור": q.items.map((i) => `${i.description}${i.quantity !== 1 ? ` ×${i.quantity}` : ""}`).join(" | "),
+    "אפשרות שנבחרה": chosen?.label ?? "",
+    "מרחק (ק\"מ)": t.distance_km ? String(t.distance_km) : "",
+    "תיאור": itemsFor(q).map((i) => `${i.description}${i.quantity !== 1 ? ` ×${i.quantity}` : ""}`).join(" | "),
     "מחיר לפני מע\"מ": tot.afterDiscount.toFixed(2),
     "סה\"כ כולל מע\"מ": tot.total.toFixed(2),
     "אושר ע\"י": q.approved_by_name ?? "",

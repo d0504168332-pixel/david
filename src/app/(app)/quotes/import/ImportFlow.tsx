@@ -40,6 +40,7 @@ export default function ImportFlow({ aiEnabled, ...editor }: Omit<EditorProps, "
       client_email: d.client_email,
       client_address: d.client_address,
       items: d.items.map(({ price_source: _ps, ...i }) => i),
+      ...(d.trip ? { meta: { trip: d.trip } } : {}),
     } as unknown as Quote;
     const priceSources = Object.fromEntries(d.items.filter((i) => i.price_source).map((i) => [i.id, i.price_source!]));
     return (

@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Plus, FileText, Search, MailPlus } from "lucide-react";
+import { headers } from "next/headers";
+import { Plus, FileText, Search, MailPlus, BellRing, MessageCircle, Eye } from "lucide-react";
 import { requireBusiness } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
-import { STATUS_CLASS, STATUS_LABEL, formatDate, money, quoteNumber } from "@/lib/quote";
+import { STATUS_CLASS, STATUS_LABEL, formatDate, money, quoteNumber, toIntlPhone } from "@/lib/quote";
 import type { Quote, QuoteStatus } from "@/lib/types";
 
 type SP = Promise<{ q?: string; status?: string; mine?: string }>;
@@ -10,17 +11,23 @@ type SP = Promise<{ q?: string; status?: string; mine?: string }>;
 export default async function QuotesPage({ searchParams }: { searchParams: SP }) {
   const { supabase, profile, business } = await requireBusiness();
   const sp = await searchParams;
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host") ?? ""}`;
   const q = (sp.q ?? "").trim();
+  const followup = sp.status === "followup";
   const status = (["draft", "sent", "approved", "rejected"].includes(sp.status ?? "") ? sp.status : "") as QuoteStatus | "";
+  const days = business.reminder_days > 0 ? business.reminder_days : 3;
+  const cutoff = new Date(Date.now() - days * 86400000).toISOString();
   const mine = sp.mine === "1";
 
   let query = supabase
     .from("quotes")
-    .select("id,number,title,client_name,issue_date,status,total,created_by,created_at")
+    .select("id,number,title,client_name,client_phone,share_token,issue_date,status,total,created_by,created_at,sent_at,view_count,reminder_count")
     .eq("business_id", business.id)
     .order("created_at", { ascending: false })
     .limit(300);
   if (status) query = query.eq("status", status);
+  if (followup) query = query.eq("status", "sent").lt("sent_at", cutoff);
   if (mine) query = query.eq("created_by", profile.id);
   if (q) {
     const safe = q.replace(/[%,()"\\]/g, " ");
@@ -34,7 +41,8 @@ export default async function QuotesPage({ searchParams }: { searchParams: SP })
   const { data: members } = await supabase.from("profiles").select("id,full_name").eq("business_id", business.id);
   const nameOf = new Map((members ?? []).map((m) => [m.id, m.full_name]));
 
-  const { data: all } = await supabase.from("quotes").select("status,total").eq("business_id", business.id);
+  const { data: all } = await supabase.from("quotes").select("status,total,sent_at").eq("business_id", business.id);
+  const waiting = (all ?? []).filter((x) => x.status === "sent" && x.sent_at && x.sent_at < cutoff).length;
   const stats = {
     count: all?.length ?? 0,
     open: (all ?? []).filter((x) => x.status === "sent").length,
@@ -46,7 +54,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: SP })
     if (q) params.set("q", q);
     if (val) params.set("status", val);
     if (mine) params.set("mine", "1");
-    const on = status === val;
+    const on = (followup ? "followup" : status) === val;
     return (
       <Link
         key={label}
@@ -100,8 +108,23 @@ export default async function QuotesPage({ searchParams }: { searchParams: SP })
           {tab("נשלחו", "sent")}
           {tab("אושרו", "approved")}
           {tab("נדחו", "rejected")}
+          {tab(`מחכות לתזכורת${waiting ? ` (${waiting})` : ""}`, "followup")}
         </div>
       </div>
+
+      {waiting && !followup ? (
+        <Link href="/quotes?status=followup" className="mt-4 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900 transition hover:bg-amber-100">
+          <BellRing className="size-5 shrink-0" />
+          <span className="flex-1 text-sm">
+            <b>{waiting === 1 ? "הצעה אחת מחכה" : `${waiting} הצעות מחכות`} לתשובה יותר מ-{days} ימים.</b> לחצו לשליחת תזכורת בוואטסאפ.
+          </span>
+        </Link>
+      ) : null}
+      {followup ? (
+        <p className="mt-4 text-sm text-stone-600">
+          הצעות שנשלחו לפני יותר מ-{days} ימים ועדיין לא אושרו. ללקוחות עם מייל נשלחת תזכורת אוטומטית; כאן אפשר לשלוח גם בוואטסאפ.
+        </p>
+      ) : null}
 
       <div className="mt-5 space-y-2.5">
         {(quotes ?? []).length === 0 ? (
@@ -119,10 +142,10 @@ export default async function QuotesPage({ searchParams }: { searchParams: SP })
           </div>
         ) : (
           (quotes ?? []).map((qt) => (
+            <div key={qt.id} className="flex items-stretch gap-2">
             <Link
-              key={qt.id}
               href={`/quotes/${qt.id}`}
-              className="card group flex items-center gap-4 p-4 transition hover:-translate-y-px hover:shadow-md"
+              className="card group flex min-w-0 flex-1 items-center gap-4 p-4 transition hover:-translate-y-px hover:shadow-md"
             >
               <div className="hidden size-11 shrink-0 place-items-center rounded-xl bg-brand/[0.07] text-[13px] font-extrabold text-brand sm:grid">
                 {qt.number ? `#${String(qt.number).slice(-4)}` : "—"}
@@ -142,8 +165,33 @@ export default async function QuotesPage({ searchParams }: { searchParams: SP })
               </div>
               <div className="text-left">
                 <div className="font-extrabold tabular-nums">{money(qt.total)}</div>
+                {qt.status === "sent" ? (
+                  <div className="mt-0.5 flex items-center justify-end gap-1 text-[11.5px] font-semibold text-stone-500">
+                    {qt.view_count ? (
+                      <>
+                        <Eye className="size-3.5 text-sky-600" /> נפתחה
+                      </>
+                    ) : (
+                      "לא נפתחה"
+                    )}
+                  </div>
+                ) : null}
               </div>
             </Link>
+            {followup && qt.client_phone ? (
+              <a
+                className="card grid w-14 shrink-0 place-items-center text-[#128C7E] transition hover:bg-emerald-50"
+                title="תזכורת בוואטסאפ"
+                target="_blank"
+                rel="noreferrer"
+                href={`https://wa.me/${toIntlPhone(qt.client_phone)}?text=${encodeURIComponent(
+                  `שלום ${qt.client_name},\nרצינו לוודא שקיבלת את הצעת המחיר מס׳ ${quoteNumber(business.quote_prefix, qt.number)} מ${business.name}.\nאפשר לצפות ולאשר כאן:\n${origin}/q/${qt.share_token}`
+                )}`}
+              >
+                <MessageCircle className="size-5" />
+              </a>
+            ) : null}
+            </div>
           ))
         )}
       </div>

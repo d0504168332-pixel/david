@@ -1,14 +1,17 @@
 import "server-only";
 import type { ParsedRequest } from "./parse-request";
+import type { Trip } from "./types";
 
-const PROMPT = `You extract a price-quote request from an email (usually Hebrew) for a business that sends price quotes.
+const prompt = () => `You extract a price-quote request from an email (usually Hebrew) for a business that sends price quotes.
 Return ONLY a JSON object, no prose, with exactly these keys:
 {"client_name": string (the requesting company, or the person's name if no company),
  "client_contact": string (the person who wrote),
  "client_phone": string, "client_email": string, "client_address": string,
  "title": string (short Hebrew subject for the quote, max 8 words),
  "items": [{"description": string (short, in the email's language), "details": string (specs/notes for this item, may be ""), "quantity": number}],
- "hints": string (dates, deadlines, budget, special requests — internal notes for the business, "" if none)}
+ "hints": string (dates, deadlines, budget, special requests — internal notes for the business, "" if none),
+ "trip": null, or when the request is for passenger transport (bus, minibus, shuttle): {"origin": string, "destination": string, "date": "YYYY-MM-DD" or "", "time": "HH:MM" or "", "passengers": number or 0, "round_trip": boolean, "return_time": "HH:MM" or "", "stops": string, "extra_dates": ["YYYY-MM-DD", ...] for recurring trips}}
+Today's date is ${new Date().toISOString().slice(0, 10)}; resolve relative or year-less dates to the nearest future date.
 Rules: one item per distinct product/service requested; quantity defaults to 1; never invent prices; ignore the business's own signature and quoted older messages; empty string when unknown.`;
 
 export async function parseWithAI(text: string): Promise<ParsedRequest | null> {
@@ -21,7 +24,7 @@ export async function parseWithAI(text: string): Promise<ParsedRequest | null> {
       body: JSON.stringify({
         model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5",
         max_tokens: 2000,
-        system: PROMPT,
+        system: prompt(),
         messages: [{ role: "user", content: `<email>\n${text.slice(0, 20000)}\n</email>` }],
       }),
     });
@@ -38,6 +41,7 @@ export async function parseWithAI(text: string): Promise<ParsedRequest | null> {
       client_address: String(p.client_address ?? ""),
       title: String(p.title ?? ""),
       hints: String(p.hints ?? ""),
+      trip: cleanTrip(p.trip),
       items: Array.isArray(p.items)
         ? p.items
             .filter((i: { description?: string }) => i?.description)
@@ -53,3 +57,24 @@ export async function parseWithAI(text: string): Promise<ParsedRequest | null> {
   }
 }
 
+
+function cleanTrip(t: unknown): Trip | null {
+  if (!t || typeof t !== "object") return null;
+  const o = t as Record<string, unknown>;
+  const str = (v: unknown, re?: RegExp) => (typeof v === "string" && v.trim() && (!re || re.test(v.trim())) ? v.trim() : undefined);
+  const DATE = /^\d{4}-\d{2}-\d{2}$/;
+  const TIME = /^\d{1,2}:\d{2}$/;
+  const trip: Trip = {
+    origin: str(o.origin),
+    destination: str(o.destination),
+    date: str(o.date, DATE),
+    time: str(o.time, TIME),
+    passengers: Number(o.passengers) > 0 ? Math.round(Number(o.passengers)) : undefined,
+    round_trip: o.round_trip === true || undefined,
+    return_time: str(o.return_time, TIME),
+    stops: str(o.stops),
+    extra_dates: Array.isArray(o.extra_dates) ? o.extra_dates.filter((d): d is string => typeof d === "string" && DATE.test(d)).slice(0, 60) : undefined,
+  };
+  const clean = Object.fromEntries(Object.entries(trip).filter(([, v]) => v !== undefined && !(Array.isArray(v) && !v.length))) as Trip;
+  return clean.origin || clean.destination ? clean : null;
+}
