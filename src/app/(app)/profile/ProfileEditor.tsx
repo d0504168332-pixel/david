@@ -39,8 +39,8 @@ export default function ProfileEditor({ profile, businessName, taxId }: { profil
     });
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="space-y-5">
+    <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="min-w-0 space-y-5">
         <section className="card p-5">
           <h2 className="mb-4 text-[17px] font-extrabold">הפרטים שלי</h2>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -74,11 +74,11 @@ export default function ProfileEditor({ profile, businessName, taxId }: { profil
                 onClick={() => set("signature_style", s.id)}
                 className={`flex h-24 min-w-0 flex-col sm:h-28 items-center justify-between rounded-xl border-2 p-2 transition ${p.signature_style === s.id ? "border-brand bg-brand/5" : "border-stone-200 hover:border-stone-300"}`}
               >
-                <div className="grid flex-1 place-items-center overflow-hidden">
+                <div className="grid w-full min-w-0 flex-1 place-items-center overflow-hidden">
                   {s.id === "drawn" ? (
                     p.signature_image ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.signature_image} alt="" className="max-h-14 object-contain" />
+                      <img src={p.signature_image} alt="" className="max-h-14 max-w-full object-contain" />
                     ) : (
                       <span className="text-xs text-stone-400">ציירו למטה ✍</span>
                     )
@@ -113,7 +113,7 @@ export default function ProfileEditor({ profile, businessName, taxId }: { profil
                 onClick={() => set("stamp_shape", shape)}
                 className={`flex h-36 min-w-0 flex-col items-center justify-between gap-1 overflow-hidden sm:h-44 rounded-xl border-2 p-2 transition ${p.stamp_shape === shape ? "border-brand bg-brand/5" : "border-stone-200 hover:border-stone-300"}`}
               >
-                <div className="grid w-full flex-1 origin-center scale-[0.78] place-items-center sm:scale-100">
+                <div className="grid w-full min-w-0 flex-1 place-items-center">
                   <Stamp businessName={businessName} fullName={p.full_name || "השם שלך"} jobTitle={p.job_title} taxId={taxId} color={p.stamp_color} shape={shape} size={shape === "round" ? 112 : shape === "rect" ? 88 : 104} />
                 </div>
                 <span className="text-xs font-semibold text-stone-600">{label}</span>
@@ -128,25 +128,25 @@ export default function ProfileEditor({ profile, businessName, taxId }: { profil
       </div>
 
       {/* תצוגה מקדימה */}
-      <div className="lg:sticky lg:top-6 lg:self-start">
+      <div className="min-w-0 lg:sticky lg:top-6 lg:self-start">
         <div className="card overflow-hidden">
           <div className="border-b border-stone-100 px-5 py-3 text-sm font-semibold text-stone-500">כך זה ייראה בתחתית ההצעה</div>
           <div className="bg-white px-4 py-6 sm:px-6 sm:py-8">
-            <div className="flex items-end justify-between gap-2">
-              <div className="text-[13px]">
+            <div className="flex flex-col gap-5 min-[400px]:flex-row min-[400px]:items-end min-[400px]:justify-between min-[400px]:gap-3">
+              <div className="min-w-0 text-[13px]">
                 <div className="text-stone-500">בברכה,</div>
                 <div className="text-[15px] font-extrabold">{p.full_name || "השם שלך"}</div>
                 {p.job_title ? <div className="text-stone-600">{p.job_title}</div> : null}
-                <div className="text-xs text-stone-500" dir="ltr" style={{ textAlign: "right" }}>{[p.phone, profile.email].filter(Boolean).join(" · ")}</div>
+                <div className="break-all text-xs text-stone-500" dir="ltr" style={{ textAlign: "right" }}>{[p.phone, profile.email].filter(Boolean).join(" · ")}</div>
               </div>
-              <div className="flex flex-col items-center">
+              <div className="flex min-w-0 max-w-full flex-col items-center self-center min-[400px]:max-w-[60%] min-[400px]:self-auto">
                 {p.show_stamp ? (
-                  <div className={p.show_signature ? (p.stamp_shape === "round" || p.stamp_shape === "rect" ? "-mb-3" : "-mb-1") : ""}>
+                  <div className={"max-w-full " + (p.show_signature ? (p.stamp_shape === "round" || p.stamp_shape === "rect" ? "-mb-3" : "-mb-1") : "")}>
                     <Stamp businessName={businessName} fullName={p.full_name || "השם שלך"} jobTitle={p.job_title} taxId={taxId} color={p.stamp_color} shape={p.stamp_shape} size={p.stamp_shape === "round" ? 96 : p.stamp_shape === "rect" ? 86 : 118} />
                   </div>
                 ) : null}
                 {p.show_signature ? (
-                  <div className="relative text-center">
+                  <div className="relative max-w-full text-center">
                     <Signature name={p.full_name} style={p.signature_style as SignatureStyle} color={p.signature_color} image={p.signature_image} height={54} />
                     <div className="mt-0.5 border-t border-stone-300 pt-0.5 text-[10px] text-stone-500">חתימה</div>
                   </div>

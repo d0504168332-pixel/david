@@ -69,7 +69,7 @@ export default function Stamp({
         width={W * scale}
         height={H * scale}
         viewBox={`0 0 ${W} ${H}`}
-        style={{ transform: `rotate(${rotate * 0.5}deg)`, opacity: 0.9 }}
+        style={{ transform: `rotate(${rotate * 0.5}deg)`, opacity: 0.9, maxWidth: "100%", height: "auto" }}
         aria-label={`חותמת ${businessName}`}
       >
         <defs>{filter}</defs>
@@ -101,7 +101,7 @@ export default function Stamp({
         width={W * scale * 1.1}
         height={H * scale * 1.1}
         viewBox={`0 0 ${W} ${H}`}
-        style={{ transform: `rotate(${rotate * 0.35}deg)`, opacity: 0.9 }}
+        style={{ transform: `rotate(${rotate * 0.35}deg)`, opacity: 0.9, maxWidth: "100%", height: "auto" }}
         aria-label={`חותמת ${businessName}`}
       >
         <defs>{filter}</defs>
@@ -125,7 +125,7 @@ export default function Stamp({
         width={w}
         height={h}
         viewBox="0 0 218 123"
-        style={{ transform: `rotate(${rotate / 2}deg)`, opacity: 0.88 }}
+        style={{ transform: `rotate(${rotate / 2}deg)`, opacity: 0.88, maxWidth: "100%", height: "auto" }}
         aria-label={`חותמת ${businessName}`}
       >
         <defs>{filter}</defs>
@@ -162,7 +162,7 @@ export default function Stamp({
       width={size}
       height={size}
       viewBox="0 0 160 160"
-      style={{ transform: `rotate(${rotate}deg)`, opacity: 0.88 }}
+      style={{ transform: `rotate(${rotate}deg)`, opacity: 0.88, maxWidth: "100%", height: "auto" }}
       aria-label={`חותמת ${businessName}`}
     >
       <defs>

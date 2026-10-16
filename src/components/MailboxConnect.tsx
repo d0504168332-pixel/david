@@ -36,7 +36,7 @@ export default function MailboxConnect({ scope, status, defaultEmail, title, sub
         <div className="flex flex-wrap items-center gap-3 rounded-xl bg-emerald-50 p-3 ring-1 ring-emerald-200">
           <CheckCircle2 className="size-5 text-emerald-600" />
           <div className="min-w-0 flex-1">
-            <div className="font-bold" dir="ltr" style={{ textAlign: "right" }}>
+            <div className="break-all font-bold" dir="ltr" style={{ textAlign: "right" }}>
               {status.email}
             </div>
             <div className="text-xs text-emerald-800">מחובר — המיילים יוצאים מהכתובת הזו</div>
@@ -135,7 +135,7 @@ export default function MailboxConnect({ scope, status, defaultEmail, title, sub
           ) : null}
 
           {msg?.error ? <div className="text-sm font-semibold text-rose-600">{msg.error}</div> : null}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button className="btn-primary" disabled={pending}>
               {pending ? <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Mail className="size-4" />}
               {pending ? "בודק חיבור…" : "חיבור ובדיקה"}

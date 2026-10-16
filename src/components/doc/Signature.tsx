@@ -23,12 +23,12 @@ type Props = {
 export default function Signature({ name, style, color, image, height = 70 }: Props) {
   if (style === "drawn" && image) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={image} alt={`חתימת ${name}`} style={{ height, width: "auto", maxWidth: 220, objectFit: "contain" }} />;
+    return <img src={image} alt={`חתימת ${name}`} style={{ height, width: "auto", maxWidth: "min(220px, 100%)", objectFit: "contain" }} />;
   }
   const s = SIGNATURE_STYLES.find((x) => x.id === style) ?? SIGNATURE_STYLES[0];
   const display = name || "חתימה";
   return (
-    <div style={{ position: "relative", display: "inline-block", height, minWidth: 140, lineHeight: 1 }} aria-label={`חתימת ${name}`}>
+    <div style={{ position: "relative", display: "inline-block", height, minWidth: "min(140px, 100%)", maxWidth: "100%", lineHeight: 1 }} aria-label={`חתימת ${name}`}>
       <span
         style={{
           fontFamily: s.family || "var(--font-amatic)",
