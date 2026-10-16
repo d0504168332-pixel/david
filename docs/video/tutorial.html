@@ -1,0 +1,575 @@
+<title>ממייל לנסיעה ב-YIT</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Secular+One&display=swap">
+<style>
+/* Layout: a fixed 1280×720 "screen" scaled to fit, top chapter bar, mock UIs in the middle, caption band at the bottom. */
+:root{
+  --night:#0d1b2a;       /* backdrop around the screen */
+  --ink:#13263b;         /* main text / dark UI */
+  --sky:#e9eff5;         /* app background */
+  --paper:#ffffff;
+  --line:#d4dde7;
+  --muted:#5f7184;
+  --amber:#f0a030;       /* bus amber — the one accent */
+  --amber-soft:#fff1d9;
+  --go:#1f9d6a; --go-soft:#ddf5ea;
+  --warn:#d9480f; --warn-soft:#ffe8dc;
+  --wa:#25d366;
+  --display:"Secular One","Liberation Sans",Arial,sans-serif;
+  --body:"Assistant","Liberation Sans",Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--night);color:#e8eef5}
+body{font-family:var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 32px}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.viewport{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;overflow:hidden;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+#stage{position:absolute;top:0;right:0;width:1280px;height:720px;transform-origin:top right;background:var(--sky);color:var(--ink);overflow:hidden;direction:rtl}
+
+/* chapter bar */
+.topbar{position:absolute;inset:0 0 auto 0;height:64px;display:flex;align-items:center;gap:16px;padding:0 36px;background:var(--ink);color:#fff;z-index:5}
+.topbar .brand{font-family:var(--display);font-size:24px;letter-spacing:.3px}
+.topbar .brand b{color:var(--amber);font-weight:400}
+.chap{margin-inline-start:auto;display:flex;gap:8px;align-items:center}
+.chap i{width:34px;height:6px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden;position:relative}
+.chap i u{position:absolute;inset:0 0 0 auto;width:0;background:var(--amber)}
+.chapname{font-size:18px;font-weight:700;color:#cfe0f0;min-width:250px;text-align:left}
+
+/* caption band */
+.caption{position:absolute;inset:auto 0 0 0;height:118px;background:var(--paper);border-top:4px solid var(--amber);display:flex;align-items:center;gap:22px;padding:0 40px;z-index:5}
+.caption .num{flex:none;width:64px;height:64px;border-radius:50%;background:var(--ink);color:var(--amber);font-family:var(--display);font-size:32px;display:grid;place-items:center}
+.caption p{margin:0;font-size:29px;line-height:1.3;font-weight:700;color:var(--ink);text-wrap:balance}
+.caption p em{font-style:normal;background:var(--amber-soft);padding:0 6px;border-radius:6px}
+
+/* scenes */
+.scene{position:absolute;top:64px;left:0;right:0;bottom:118px;opacity:0;visibility:hidden;transition:opacity .45s}
+.scene.active{opacity:1;visibility:visible}
+[data-at]{transition:opacity .45s, transform .45s cubic-bezier(.2,.8,.2,1), background-color .3s, color .3s, box-shadow .3s}
+.pop{opacity:0;transform:translateY(14px) scale(.98)}
+.pop.on{opacity:1;transform:none}
+.fade{opacity:0}.fade.on{opacity:1}
+.slide{opacity:0;transform:translateX(-40px)}.slide.on{opacity:1;transform:none}
+
+.win{position:absolute;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 40px rgba(19,38,59,.13);overflow:hidden}
+.win .bar{height:40px;background:#f4f7fa;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:7px;padding:0 14px;font-size:15px;color:var(--muted);font-weight:600}
+.win .bar s{width:11px;height:11px;border-radius:50%;background:#d6dde5;text-decoration:none}
+.win .bar span{margin-inline-start:10px}
+.pad{padding:22px 26px}
+.lbl{font-size:15px;color:var(--muted);font-weight:600;margin-bottom:6px}
+.field{border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-size:19px;background:#fbfcfd;min-height:46px;direction:rtl}
+.ltr{direction:ltr;text-align:left;font-family:"Liberation Mono",Consolas,monospace;font-size:17px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 22px;border-radius:10px;font-weight:800;font-size:19px;background:var(--ink);color:#fff;border:0}
+.btn.amber{background:var(--amber);color:var(--ink)}
+.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+.btn.wa{background:var(--wa);color:#fff}
+.btn.go{background:var(--go);color:#fff}
+.pressed{transform:scale(.94)!important}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:17px;font-weight:700;background:var(--sky);color:var(--ink);border:1px solid var(--line)}
+.chip b{color:var(--muted);font-weight:600}
+.chip.hit{background:var(--amber-soft);border-color:#f3c77e}
+.tag-go{background:var(--go-soft);color:var(--go);border-color:#a9e2c9}
+
+/* title cards */
+.titlecard{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:22px;text-align:center}
+.titlecard h1{font-family:var(--display);font-weight:400;font-size:66px;margin:0;line-height:1.1;text-wrap:balance}
+.titlecard h1 b{color:var(--amber);font-weight:400}
+.flow{display:flex;align-items:center;gap:18px;font-size:24px;font-weight:800}
+.flow .st{display:flex;flex-direction:column;align-items:center;gap:10px;width:170px}
+.flow .ic{width:96px;height:96px;border-radius:24px;background:var(--paper);border:2px solid var(--line);display:grid;place-items:center}
+.flow .arr{color:var(--amber);font-size:34px;margin-top:-34px}
+svg.i{width:48px;height:48px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* app chrome */
+.app{position:absolute;inset:26px 36px;display:flex;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--paper);box-shadow:0 14px 40px rgba(19,38,59,.12)}
+.side{width:220px;background:var(--ink);color:#cfe0f0;padding:20px 14px;display:flex;flex-direction:column;gap:6px;font-size:18px;font-weight:700}
+.side .logo{font-family:var(--display);color:#fff;font-size:22px;margin-bottom:14px;font-weight:400}
+.side a{padding:10px 12px;border-radius:9px;display:flex;align-items:center;justify-content:space-between}
+.side a.cur{background:rgba(255,255,255,.1);color:#fff}
+.badge{min-width:28px;height:28px;border-radius:14px;background:var(--amber);color:var(--ink);display:grid;place-items:center;font-size:16px;font-weight:800;transform:scale(0)}
+.badge.on{transform:scale(1)}
+.main{flex:1;padding:24px 30px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.main h2{margin:0;font-size:28px;font-weight:800}
+
+/* tables */
+table{border-collapse:collapse;width:100%;font-size:18px;color:inherit}
+th{font-size:15px;color:var(--muted);text-align:right;font-weight:700;padding:8px 10px;border-bottom:2px solid var(--line)}
+td{padding:10px;border-bottom:1px solid var(--line)}
+.num{font-variant-numeric:tabular-nums}
+
+/* phone */
+.phone{position:absolute;width:310px;height:520px;border-radius:40px;background:#0f1720;padding:12px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.phone .scr{width:100%;height:100%;border-radius:30px;overflow:hidden;background:#fff;position:relative;display:flex;flex-direction:column}
+.wa-top{background:#075e54;color:#fff;padding:16px 16px 12px;font-weight:800;font-size:18px;display:flex;gap:10px;align-items:center}
+.wa-top i{width:34px;height:34px;border-radius:50%;background:#cfe0f0;display:block}
+.wa-body{flex:1;background:#ece5dd;padding:14px;display:flex;flex-direction:column;justify-content:flex-end}
+.bubble{background:#dcf8c6;border-radius:12px;padding:10px 12px;font-size:15px;line-height:1.45;color:#111;box-shadow:0 1px 1px rgba(0,0,0,.12);align-self:flex-start;max-width:92%}
+.bubble a{color:#0a66c2;direction:ltr;display:block;text-align:left;font-size:13px}
+
+/* cursor */
+#cursor{position:absolute;top:0;left:0;width:30px;height:30px;z-index:20;pointer-events:none;opacity:0;transition:opacity .3s}
+#cursor svg{width:30px;height:30px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+#ripple{position:absolute;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;border:3px solid var(--amber);z-index:19;pointer-events:none;opacity:0}
+#ripple.go{animation:rip .55s ease-out}
+@keyframes rip{from{opacity:1;transform:scale(.3)}to{opacity:0;transform:scale(1.4)}}
+.typing::after{content:"";display:inline-block;width:2px;height:1.05em;background:var(--ink);vertical-align:-3px;margin-inline-start:2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.fly.on{animation:fly 1s ease-in forwards}
+@keyframes fly{to{transform:translate(-520px,-260px) scale(.2) rotate(-12deg);opacity:0}}
+.toast{position:absolute;top:18px;left:50%;transform:translate(-50%,-30px);opacity:0;background:var(--go);color:#fff;font-weight:800;font-size:20px;padding:12px 22px;border-radius:12px;box-shadow:0 10px 30px rgba(31,157,106,.35);z-index:8}
+.toast.on{transform:translate(-50%,0);opacity:1}
+
+/* controls outside the screen */
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.controls button{font-family:var(--body);font-size:16px;font-weight:700;height:42px;padding:0 16px;border-radius:10px;border:1px solid #2b3e52;background:#16283b;color:#e8eef5;cursor:pointer}
+.controls button:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.controls button.main-btn{background:var(--amber);color:var(--ink);border-color:var(--amber);min-width:110px}
+.scrub{flex:1;min-width:160px;height:8px;border-radius:4px;background:#22364b;position:relative;cursor:pointer}
+.scrub u{position:absolute;inset:0 0 0 auto;width:0;background:var(--amber);border-radius:4px}
+.time{font-variant-numeric:tabular-nums;color:#9fb3c8;font-size:15px;min-width:90px;text-align:center}
+.mirror{direction:rtl;font-size:18px;line-height:1.5;font-weight:700;color:#e8eef5;background:#16283b;border-radius:12px;padding:12px 16px;display:none}
+.small .mirror{display:block}
+.note{direction:rtl;color:#9fb3c8;font-size:15px;line-height:1.6;max-width:70ch}
+.rec body,.rec{padding:0!important}
+.rec .controls,.rec .mirror,.rec .note{display:none!important}
+.rec .viewport{border-radius:0;box-shadow:none}
+.rec *,.rec *::after{transition:none!important;animation:none!important}
+@media (prefers-reduced-motion:reduce){[data-at]{transition-duration:.01s}}
+</style>
+
+<div class="wrap" dir="rtl">
+  <div class="viewport" id="vp">
+    <div id="stage">
+      <div class="topbar">
+        <div class="brand">הצעות <b>מחיר</b> · הדרכה</div>
+        <div class="chapname" id="chapname"></div>
+        <div class="chap" id="chaps"></div>
+      </div>
+
+      <!-- 0. פתיחה -->
+      <section class="scene" data-dur="5" data-cap="איך זה עובד: מהמייל של הלקוח ועד נסיעה שמוקמת ב-YIT" data-name="פתיחה">
+        <div class="titlecard">
+          <h1 class="pop" data-at="0.2">מהמייל של הלקוח<br>ל<b>נסיעה ב-YIT</b></h1>
+          <div class="flow">
+            <div class="st pop" data-at="1"><div class="ic"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div>מייל נכנס</div>
+            <div class="arr fade" data-at="1.4">←</div>
+            <div class="st pop" data-at="1.7"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg></div>הצעת מחיר</div>
+            <div class="arr fade" data-at="2.1">←</div>
+            <div class="st pop" data-at="2.4"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg></div>הלקוח מאשר</div>
+            <div class="arr fade" data-at="2.8">←</div>
+            <div class="st pop" data-at="3.1"><div class="ic"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="11" rx="2"/><path d="M3 11h18M7 17v2M17 17v2"/></svg></div>נסיעה ב-YIT</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 1. הגדרה חד-פעמית -->
+      <section class="scene" data-dur="10" data-name="הגדרה חד-פעמית"
+        data-cap="פעם אחת בלבד: לעסק יש <em>כתובת מייל ייחודית</em>. מגדירים בג'ימייל העברה אוטומטית אליה, והלקוחות ממשיכים לשלוח למייל הרגיל שלכם."
+        data-cursor='[[0,"#s1-start"],[5.2,"#s1-toggle",1],[7.5,"#s1-toggle"]]'>
+        <div class="win pop" data-at="0.3" style="top:34px;right:60px;width:560px">
+          <div class="bar"><s></s><s></s><s></s><span>הגדרות העסק</span></div>
+          <div class="pad" style="display:flex;flex-direction:column;gap:14px">
+            <div style="font-size:24px;font-weight:800">קליטת בקשות במייל</div>
+            <div><div class="lbl">הכתובת הייחודית של העסק שלך</div>
+              <div class="field ltr" id="s1-start">requests+k7m2x9@inbound.postmarkapp.com</div></div>
+            <div style="font-size:17px;color:var(--muted);line-height:1.5">כל מייל שמגיע לכתובת הזו נכנס אוטומטית ל"בקשות מלקוחות".</div>
+          </div>
+        </div>
+        <div class="win pop" data-at="2.2" style="top:150px;left:60px;width:540px">
+          <div class="bar"><s></s><s></s><s></s><span>Gmail · הגדרות · העברה אוטומטית</span></div>
+          <div class="pad" style="display:flex;flex-direction:column;gap:14px">
+            <div><div class="lbl">מייל שמגיע אל</div><div class="field ltr">office@hasaot-haderech.co.il</div></div>
+            <div><div class="lbl">ומכיל את המילים</div><div class="field">הצעת מחיר · הסעה · אוטובוס</div></div>
+            <div style="display:flex;align-items:center;gap:14px">
+              <div id="s1-toggle" style="width:62px;height:34px;border-radius:17px;background:#cfd8e2;position:relative;flex:none">
+                <i class="s1-knob" data-at="5.4" style="position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:right .3s"></i>
+              </div>
+              <div style="font-size:18px;font-weight:700">העבר אוטומטית לכתובת הייחודית</div>
+            </div>
+            <div class="chip tag-go pop" data-at="5.8" style="align-self:flex-start">✓ ההעברה פעילה</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. הלקוח שולח מייל -->
+      <section class="scene" data-dur="11" data-name="הלקוח שולח מייל"
+        data-cap="הלקוח שולח מייל כמו תמיד. <em>בלי טופס ובלי אפליקציה</em>, וכותב בשפה חופשית מה הוא צריך."
+        data-cursor='[[0,"#s2-body"],[8.6,"#s2-send"],[9.1,"#s2-send",1]]'>
+        <div class="win fly" data-at="9.4" style="top:24px;right:200px;width:880px">
+          <div class="bar"><s></s><s></s><s></s><span>הודעה חדשה</span></div>
+          <div class="pad" style="display:flex;flex-direction:column;gap:12px;font-size:19px">
+            <div style="display:flex;gap:10px;border-bottom:1px solid var(--line);padding-bottom:8px"><b style="width:60px;color:var(--muted)">מאת</b> רונית כהן · נובה טכנולוגיות</div>
+            <div style="display:flex;gap:10px;border-bottom:1px solid var(--line);padding-bottom:8px"><b style="width:60px;color:var(--muted)">אל</b> <span class="ltr">office@hasaot-haderech.co.il</span></div>
+            <div style="display:flex;gap:10px;border-bottom:1px solid var(--line);padding-bottom:8px"><b style="width:60px;color:var(--muted)">נושא</b> בקשה להצעת מחיר – יום גיבוש</div>
+            <div id="s2-body" data-type="0.6" data-speed="34" style="min-height:150px;line-height:1.6;white-space:pre-line">שלום,
+אנחנו צריכים אוטובוס ל-50 נוסעים מתל אביב לירושלים ב-20/11 בשעה 08:00, הלוך וחזור. חזרה בשעה 17:30.
+אשמח להצעת מחיר.
+רונית, 050-1234567</div>
+            <div><span class="btn" id="s2-send" data-at="9.1">שליחה</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. נכנס למערכת -->
+      <section class="scene" data-dur="10" data-name="המייל נכנס למערכת"
+        data-cap="תוך שניות המייל מופיע ב<em>בקשות מלקוחות</em>, והמערכת מזהה לבד: מאיפה, לאן, מתי, כמה נוסעים והאם הלוך-חזור."
+        data-cursor='[[0,"#s3-card"],[8,"#s3-card"]]'>
+        <div class="app">
+          <div class="side">
+            <div class="logo">הסעות הדרך</div>
+            <a>הצעות מחיר</a>
+            <a class="cur">בקשות מלקוחות <span class="badge" data-at="1">1</span></a>
+            <a>לקוחות</a>
+            <a>הגדרות העסק</a>
+          </div>
+          <div class="main">
+            <h2>בקשות מלקוחות</h2>
+            <div class="win slide" id="s3-card" data-at="1.2" style="position:relative;box-shadow:none">
+              <div class="pad" style="display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span class="chip hit">חדש</span><span class="chip">התקבל במייל</span>
+                  <b style="font-size:22px;margin-inline-start:6px">נובה טכנולוגיות · רונית כהן</b>
+                  <span style="margin-inline-start:auto;color:var(--muted);font-size:16px">לפני כמה שניות</span>
+                </div>
+                <div style="color:var(--muted);font-size:18px">בקשה להצעת מחיר – יום גיבוש</div>
+                <div class="lbl" style="margin:4px 0 0">זוהה אוטומטית:</div>
+                <div style="display:flex;flex-wrap:wrap;gap:10px">
+                  <span class="chip hit pop" data-at="2.6"><b>מוצא</b> תל אביב</span>
+                  <span class="chip hit pop" data-at="3.2"><b>יעד</b> ירושלים</span>
+                  <span class="chip hit pop" data-at="3.8"><b>תאריך</b> 20/11/2026</span>
+                  <span class="chip hit pop" data-at="4.4"><b>יציאה</b> 08:00</span>
+                  <span class="chip hit pop" data-at="5"><b>נוסעים</b> 50</span>
+                  <span class="chip hit pop" data-at="5.6"><b>הלוך-חזור</b> חזרה 17:30</span>
+                  <span class="chip hit pop" data-at="6.2"><b>טלפון</b> 050-1234567</span>
+                </div>
+                <div class="pop" data-at="7"><span class="btn amber" id="s3-btn">הכנת הצעה ←</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. הכנת ההצעה -->
+      <section class="scene" data-dur="13" data-name="הכנת ההצעה"
+        data-cap="נפתחת טיוטה מוכנה עם כל הפרטים. <em>המחיר מוצע מההצעה הקודמת ללקוח</em>, ואם משנים אותו המערכת מתריעה על הפער. אתה רק מאשר ושומר."
+        data-cursor='[[0,"#s4-client"],[2.2,"#s4-price"],[2.6,"#s4-price",1],[6.4,"#s4-price"],[9.6,"#s4-save"],[10.1,"#s4-save",1]]'>
+        <div class="app">
+          <div class="main" style="flex-direction:row;gap:24px">
+            <div style="flex:1;display:flex;flex-direction:column;gap:14px;min-width:0">
+              <h2>הצעת מחיר חדשה</h2>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div><div class="lbl">לקוח</div><div class="field" id="s4-client">נובה טכנולוגיות בע״מ</div></div>
+                <div><div class="lbl">איש קשר</div><div class="field">רונית כהן · 050-1234567</div></div>
+              </div>
+              <div class="win" style="position:relative;box-shadow:none">
+                <div class="pad" style="padding:14px 18px">
+                  <div class="lbl">פרטי הנסיעה</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px">
+                    <span class="chip">תל אביב ← ירושלים</span><span class="chip">20/11/2026</span><span class="chip">יציאה 08:00</span><span class="chip">חזרה 17:30</span><span class="chip">50 נוסעים</span>
+                  </div>
+                </div>
+              </div>
+              <table>
+                <thead><tr><th>תיאור</th><th style="width:70px">כמות</th><th style="width:200px">מחיר ליחידה</th></tr></thead>
+                <tbody><tr>
+                  <td style="font-weight:700">הסעה הלוך-חזור – 50 נוסעים<div style="font-size:14px;color:var(--muted);font-weight:600">אוטובוס 50 מקומות</div></td>
+                  <td class="num">1</td>
+                  <td><div class="field num" id="s4-price" style="font-weight:800">₪<span id="s4-pv">2,400</span></div>
+                    <div class="chip tag-go fade" data-at="0.6" style="font-size:13px;margin-top:6px;padding:3px 8px" id="s4-src">מחיר מהצעה Q-1009 ללקוח</div></td>
+                </tr></tbody>
+              </table>
+              <div class="pop" data-at="5.2" id="s4-alert" style="background:var(--warn-soft);border:1px solid #f6b799;color:#8a2f08;border-radius:12px;padding:12px 16px;font-size:18px;font-weight:700">
+                ⚠ גבוה ב-12.5% מההצעה הקודמת ללקוח הזה (Q-1009, ₪2,400)
+              </div>
+            </div>
+            <div style="width:300px;display:flex;flex-direction:column;gap:12px;justify-content:flex-end">
+              <div class="win" style="position:relative;box-shadow:none">
+                <div class="pad num" style="display:flex;flex-direction:column;gap:8px;font-size:19px">
+                  <div style="display:flex;justify-content:space-between"><span>סה״כ לפני מע״מ</span><b id="s4-sub">₪2,400</b></div>
+                  <div style="display:flex;justify-content:space-between;color:var(--muted)"><span>מע״מ 18%</span><span id="s4-vat">₪432</span></div>
+                  <div style="display:flex;justify-content:space-between;font-size:24px;border-top:2px solid var(--line);padding-top:8px"><span>לתשלום</span><b id="s4-tot">₪2,832</b></div>
+                </div>
+              </div>
+              <span class="btn" id="s4-save" data-at="10.1">שמירת ההצעה</span>
+            </div>
+          </div>
+        </div>
+        <div class="toast" data-at="10.5">ההצעה נשמרה · Q-1013</div>
+      </section>
+
+      <!-- 5. שליחה ללקוח -->
+      <section class="scene" data-dur="9" data-name="שליחה ללקוח"
+        data-cap="שולחים ללקוח בלחיצה, <em>בוואטסאפ או במייל</em>. הלקוח מקבל קישור להצעה מעוצבת עם הלוגו, החתימה והחותמת."
+        data-cursor='[[0,"#s5-pdf"],[2,"#s5-wa"],[2.5,"#s5-wa",1],[5,"#s5-wa"]]'>
+        <div class="win pop" data-at="0.2" style="top:24px;right:60px;width:420px">
+          <div class="bar"><s></s><s></s><s></s><span>הצעה Q-1013</span></div>
+          <div class="pad" style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:22px">נובה טכנולוגיות</b><span class="chip">טיוטה</span></div>
+            <div style="font-size:30px;font-weight:800" class="num">₪3,186</div>
+            <div class="lbl" style="margin:0">שליחה ללקוח</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <span class="btn wa" id="s5-wa" data-at="2.5">וואטסאפ</span>
+              <span class="btn ghost">מייל</span>
+              <span class="btn ghost" id="s5-pdf" style="grid-column:span 2">הורדת PDF</span>
+            </div>
+          </div>
+        </div>
+        <div class="phone pop" data-at="3" style="top:8px;left:190px">
+          <div class="scr">
+            <div class="wa-top"><i></i>רונית כהן</div>
+            <div class="wa-body">
+              <div class="bubble pop" data-at="3.6">שלום רונית,<br>מצורפת הצעת מחיר מס׳ <span style="white-space:nowrap">Q-1013</span> מהסעות הדרך על סך ₪3,186.<br>לצפייה, הורדה ואישור ההצעה:<a>hasaot.app/q/8f3c…</a>בברכה, דוד</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. הלקוח מאשר -->
+      <section class="scene" data-dur="11" data-name="הלקוח מאשר"
+        data-cap="הלקוח פותח את הקישור, רואה את ההצעה, <em>מקליד את שמו ומאשר</em>. זה כל מה שהוא צריך לעשות."
+        data-cursor='[[0,"#s6-name"],[1,"#s6-name",1],[5.6,"#s6-ok"],[6.1,"#s6-ok",1],[8,"#s6-ok"]]'>
+        <div class="phone pop" data-at="0" style="top:2px;left:490px">
+          <div class="scr" style="background:var(--sky)">
+            <div style="background:var(--ink);color:#fff;padding:16px;font-family:var(--display);font-size:20px">הסעות הדרך</div>
+            <div style="padding:14px;display:flex;flex-direction:column;gap:10px;flex:1">
+              <div style="font-weight:800;font-size:18px">הצעת מחיר Q-1013</div>
+              <div style="background:#fff;border-radius:10px;padding:10px;font-size:14px;line-height:1.6;border:1px solid var(--line)">
+                תל אביב ← ירושלים וחזרה<br>20/11/2026 · 08:00–17:30 · 50 נוסעים
+              </div>
+              <div style="display:flex;justify-content:space-between;font-weight:800;font-size:20px" class="num"><span>לתשלום</span><span>₪3,186</span></div>
+              <div class="lbl" style="margin:6px 0 0;font-size:13px">שם מלא לאישור</div>
+              <div class="field" id="s6-name" style="font-size:16px;min-height:40px;padding:8px 12px"><span id="s6-typed" data-type="1.4" data-speed="5">רונית כהן</span></div>
+              <span class="btn go" id="s6-ok" data-at="6.1" style="font-size:16px">אני מאשרת את ההצעה</span>
+              <div class="pop" data-at="6.7" style="position:absolute;inset:0;background:var(--go);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;font-weight:800;font-size:22px">
+                <svg viewBox="0 0 24 24" style="width:80px;height:80px;stroke:#fff;fill:none;stroke-width:2.5"><circle cx="12" cy="12" r="10"/><path d="m7 12 3.5 3.5L17 9"/></svg>
+                ההצעה אושרה<br><span style="font-size:16px;font-weight:600">תודה רונית!</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. אוטומטית: מייל לסדרן -->
+      <section class="scene" data-dur="11" data-name="אוטומטית: מייל לסדרן"
+        data-cap="ברגע האישור, אוטומטית: ההצעה מסומנת <em>אושרה</em>, ולסדרן נשלח מייל עם כל פרטי הנסיעה וקובץ מוכן לייבוא ל-YIT."
+        data-cursor='[[0,"#s7-file"],[8,"#s7-file"]]'>
+        <div class="toast" data-at="0.3" style="top:12px">✓ נובה טכנולוגיות אישרה את הצעה Q-1013</div>
+        <div class="win pop" data-at="0.8" style="top:78px;right:60px;width:360px">
+          <div class="bar"><s></s><s></s><s></s><span>הצעה Q-1013</span></div>
+          <div class="pad" style="display:flex;flex-direction:column;gap:10px;font-size:18px">
+            <div style="display:flex;justify-content:space-between"><span>סטטוס</span><span class="chip tag-go">אושרה ✓</span></div>
+            <div style="display:flex;justify-content:space-between"><span>אישרה</span><b>רונית כהן</b></div>
+            <div style="display:flex;justify-content:space-between"><span>מייל לסדרן</span><span class="chip tag-go pop" data-at="2.4">נשלח ✓</span></div>
+          </div>
+        </div>
+        <div class="win slide" data-at="2.2" style="top:84px;left:50px;width:780px">
+          <div class="bar"><s></s><s></s><s></s><span>תיבת הדואר של הסדרן</span></div>
+          <div class="pad" style="display:flex;flex-direction:column;gap:12px;font-size:18px">
+            <div style="color:var(--muted)">אל: <span class="ltr">sadran@hasaot-haderech.co.il</span></div>
+            <div style="font-size:23px;font-weight:800">נסיעה מאושרת: תל אביב ← ירושלים · 20/11/2026 08:00</div>
+            <table style="font-size:17px">
+              <tr><td style="color:var(--muted);width:130px">לקוח</td><td>נובה טכנולוגיות · רונית כהן 050-1234567</td></tr>
+              <tr><td style="color:var(--muted)">מסלול</td><td>תל אביב ← ירושלים וחזרה</td></tr>
+              <tr><td style="color:var(--muted)">שעות</td><td>יציאה 08:00 · חזרה 17:30</td></tr>
+              <tr><td style="color:var(--muted)">נוסעים</td><td>50</td></tr>
+            </table>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <span class="chip hit pop" data-at="4" id="s7-file">📎 YIT_Q-1013.txt</span>
+              <span class="chip pop" data-at="4.4">📎 trip-Q-1013.csv (אקסל)</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. ייבוא ל-YIT -->
+      <section class="scene" data-dur="11" data-name="ייבוא ל-YIT"
+        data-cap="הסדרן פותח ב-YIT את <em>ייבוא הנסיעות</em> ובוחר את הקובץ. הנסיעה מוקמת עם כל הפרטים, בלי להקליד שום דבר מחדש."
+        data-cursor='[[0,"#s8-imp"],[1.4,"#s8-imp",1],[3.6,"#s8-pick"],[4.1,"#s8-pick",1],[6,"#s8-row"],[9,"#s8-row"]]'>
+        <div class="win" style="top:24px;right:60px;left:60px;bottom:24px">
+          <div class="bar"><s></s><s></s><s></s><span>YIT · ניהול נסיעות</span></div>
+          <div class="pad" style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;gap:10px;align-items:center">
+              <b style="font-size:22px">נסיעות 20/11/2026</b>
+              <span class="btn ghost" id="s8-imp" data-at="1.4" style="margin-inline-start:auto">ייבוא נסיעות מקובץ</span>
+            </div>
+            <table>
+              <thead><tr><th>מס׳</th><th>תאריך</th><th>מסלול</th><th>סוג</th><th>שעות</th><th>לקוח</th></tr></thead>
+              <tbody>
+                <tr><td class="num">1871</td><td class="num">20/11/2026</td><td>חולון - אזור תעשייה</td><td>עירוני</td><td class="num">06:30–07:15</td><td>מפעלי השרון</td></tr>
+                <tr><td class="num">1872</td><td class="num">20/11/2026</td><td>רמת גן - נתב״ג</td><td>בין עירוני</td><td class="num">10:00–11:00</td><td>טיולי אופק</td></tr>
+                <tr id="s8-row" class="pop" data-at="5.2" style="background:var(--amber-soft);font-weight:700"><td class="num">1874</td><td class="num">20/11/2026</td><td>תל אביב - ירושלים וחזרה</td><td>בין עירוני</td><td class="num">08:00–17:30</td><td>נובה טכנולוגיות</td></tr>
+              </tbody>
+            </table>
+            <div class="chip tag-go pop" data-at="5.6" style="align-self:flex-start;font-size:19px">✓ נסיעה אחת יובאה בהצלחה</div>
+          </div>
+        </div>
+        <div class="win pop" data-at="2" style="top:130px;left:330px;width:520px;z-index:3" id="s8-dlg">
+          <div class="bar"><s></s><s></s><s></s><span>בחירת קובץ</span></div>
+          <div class="pad" style="display:flex;flex-direction:column;gap:8px;font-size:18px">
+            <div style="padding:10px;border-radius:8px">📄 YIT_Q-1009.txt</div>
+            <div id="s8-pick" style="padding:10px;border-radius:8px;background:var(--amber-soft);font-weight:800">📄 YIT_Q-1013.txt</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. סיכום -->
+      <section class="scene" data-dur="9" data-name="סיכום"
+        data-cap="מה שנשאר לך לעשות: <em>להקליד מחיר וללחוץ שליחה</em>. כל השאר קורה לבד.">
+        <div class="titlecard">
+          <h1 class="pop" data-at="0.2" style="font-size:54px">מה עושה <b>מי</b>?</h1>
+          <div style="display:grid;grid-template-columns:repeat(4,250px);gap:16px;text-align:right">
+            <div class="win pop" data-at="0.8" style="position:relative"><div class="pad" style="font-size:19px;line-height:1.5"><b style="font-size:22px">הלקוח</b><br>שולח מייל רגיל<br>ומאשר בקישור</div></div>
+            <div class="win pop" data-at="1.3" style="position:relative;border-color:var(--amber);border-width:2px"><div class="pad" style="font-size:19px;line-height:1.5"><b style="font-size:22px">אתה</b><br>בודק, מקליד מחיר<br>ולוחץ שליחה</div></div>
+            <div class="win pop" data-at="1.8" style="position:relative"><div class="pad" style="font-size:19px;line-height:1.5"><b style="font-size:22px">המערכת</b><br>מזהה, מתמחרת,<br>מתריעה ושולחת לסדרן</div></div>
+            <div class="win pop" data-at="2.3" style="position:relative"><div class="pad" style="font-size:19px;line-height:1.5"><b style="font-size:22px">הסדרן</b><br>מייבא קובץ אחד<br>ל-YIT</div></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="caption"><div class="num" id="capnum">1</div><p id="cap"></p></div>
+      <div id="ripple"></div>
+      <div id="cursor"><svg viewBox="0 0 24 24"><path d="M4 2 L4 20 L9 15.5 L12.5 22.5 L15.5 21 L12 14 L19 14 Z" fill="#fff" stroke="#13263b" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+    </div>
+  </div>
+
+  <div class="mirror" id="mirror"></div>
+  <div class="controls" dir="rtl">
+    <button class="main-btn" id="play" type="button">▶ הפעלה</button>
+    <button id="prev" type="button" aria-label="שלב קודם">→ הקודם</button>
+    <button id="next" type="button" aria-label="שלב הבא">הבא ←</button>
+    <div class="scrub" id="scrub" role="slider" aria-label="מיקום בסרטון"><u id="bar"></u></div>
+    <span class="time" id="time">0:00 / 0:00</span>
+  </div>
+  <p class="note">סרטון הדרכה מונפש, בלי קול. הכתובות, השמות והמחירים בסרטון הם דוגמה בלבד.</p>
+</div>
+
+<script>
+(() => {
+  const REC = location.hash === "#rec";
+  if (REC) document.documentElement.classList.add("rec");
+  const stage = document.getElementById("stage"), vp = document.getElementById("vp");
+  const scenes = [...stage.querySelectorAll(".scene")];
+  const durs = scenes.map(s => +s.dataset.dur);
+  const starts = durs.map((_, i) => durs.slice(0, i).reduce((a, b) => a + b, 0));
+  const TOTAL = durs.reduce((a, b) => a + b, 0);
+  const cap = document.getElementById("cap"), capnum = document.getElementById("capnum"), mirror = document.getElementById("mirror");
+  const chaps = document.getElementById("chaps"), chapname = document.getElementById("chapname");
+  const cursor = document.getElementById("cursor"), ripple = document.getElementById("ripple");
+  const playBtn = document.getElementById("play"), bar = document.getElementById("bar"), timeEl = document.getElementById("time");
+  scenes.forEach(() => { const i = document.createElement("i"); i.appendChild(document.createElement("u")); chaps.appendChild(i); });
+  const typers = scenes.map(s => [...s.querySelectorAll("[data-type]")].map(el => ({ el, text: el.textContent, at: +el.dataset.type, speed: +el.dataset.speed })));
+  typers.flat().forEach(t => t.el.textContent = "");
+  const cues = scenes.map(s => [...s.querySelectorAll("[data-at]")]);
+  const paths = scenes.map(s => s.dataset.cursor ? JSON.parse(s.dataset.cursor) : null);
+
+  let scale = 1;
+  function fit() {
+    scale = REC ? 1 : vp.clientWidth / 1280;
+    stage.style.transform = `scale(${scale})`;
+    document.body.classList.toggle("small", scale < 0.62);
+  }
+  addEventListener("resize", fit); fit();
+
+  const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  const ease = x => x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+  function center(sel) {
+    const el = stage.querySelector(sel); if (!el) return [640, 300];
+    const r = el.getBoundingClientRect(), s = stage.getBoundingClientRect();
+    return [(r.left + r.width / 2 - s.left) / scale, (r.top + r.height / 2 - s.top) / scale];
+  }
+
+  // scene-specific live values
+  const extra = {
+    1(t) { const k = stage.querySelector(".s1-knob"), tg = document.getElementById("s1-toggle");
+      const on = t >= 5.4; k.style.right = on ? "32px" : "4px"; tg.style.background = on ? "var(--go)" : "#cfd8e2"; },
+    4(t) { const pv = document.getElementById("s4-pv"), price = document.getElementById("s4-price");
+      let v = 2400;
+      if (t >= 3) { const typed = "2700".slice(0, Math.min(4, Math.floor((t - 3) * 5))); v = typed ? +typed.padEnd(4, "0") : 0;
+        pv.textContent = typed ? Number(typed).toLocaleString("en-US") : ""; price.classList.toggle("typing", t < 4.2); }
+      else { pv.textContent = "2,400"; price.classList.remove("typing"); }
+      price.style.borderColor = t >= 2.6 ? "var(--amber)" : "";
+      document.getElementById("s4-src").style.display = t >= 3 ? "none" : "";
+      const sub = t >= 4.2 ? 2700 : 2400, vat = Math.round(sub * .18);
+      document.getElementById("s4-sub").textContent = "₪" + sub.toLocaleString("en-US");
+      document.getElementById("s4-vat").textContent = "₪" + vat.toLocaleString("en-US");
+      document.getElementById("s4-tot").textContent = "₪" + (sub + vat).toLocaleString("en-US"); },
+    8(t) { const d = document.getElementById("s8-dlg"); d.classList.toggle("on", t >= 2 && t < 4.6);
+      if (REC) d.style.opacity = t < 4.6 ? clamp((t - 2) / .45) : clamp(1 - (t - 4.6) / .45); }
+  };
+
+  // frame-exact styling for video export (no real-time CSS transitions)
+  const clamp = x => Math.max(0, Math.min(1, x));
+  function frameStyle(el, d) {
+    const c = el.classList, p = ease(clamp(d / .45)), st = el.style;
+    if (c.contains("btn")) { st.transform = d >= 0 && d < .25 ? "scale(.94)" : ""; return; }
+    if (c.contains("fly")) { const q = clamp(d / 1) ** 2; st.opacity = 1 - q;
+      st.transform = d < 0 ? "" : `translate(${-520 * q}px,${-260 * q}px) scale(${1 - .8 * q}) rotate(${-12 * q}deg)`; return; }
+    if (c.contains("badge")) { st.transform = `scale(${p})`; return; }
+    if (c.contains("toast")) { st.opacity = p; st.transform = `translate(-50%,${-30 * (1 - p)}px)`; return; }
+    if (c.contains("pop")) { if (el.id === "s8-dlg") return; st.opacity = p; st.transform = `translateY(${14 * (1 - p)}px) scale(${.98 + .02 * p})`; return; }
+    if (c.contains("slide")) { st.opacity = p; st.transform = `translateX(${-40 * (1 - p)}px)`; return; }
+    if (c.contains("fade")) { st.opacity = p; return; }
+  }
+  let clickAt = -9;
+  let T = 0, playing = false, last = 0, lastScene = -1, lastClick = null;
+  function render() {
+    let i = starts.findIndex((st, k) => T < st + durs[k]); if (i < 0) i = scenes.length - 1;
+    const t = T - starts[i];
+    if (i !== lastScene) {
+      scenes.forEach((s, k) => s.classList.toggle("active", k === i));
+      cap.innerHTML = scenes[i].dataset.cap; mirror.innerHTML = scenes[i].dataset.cap;
+      capnum.textContent = i === 0 ? "▶" : i; chapname.textContent = scenes[i].dataset.name;
+      lastScene = i;
+    }
+    [...chaps.children].forEach((c, k) => c.firstChild.style.width = k < i ? "100%" : k > i ? "0" : (t / durs[i] * 100) + "%");
+    cues[i].forEach(el => { const at = +el.dataset.at, on = t >= at;
+      if (el.classList.contains("btn")) el.classList.toggle("pressed", on && t < at + .25);
+      else el.classList.toggle("on", on);
+      if (REC) frameStyle(el, t - at); });
+    if (REC) scenes[i].style.opacity = Math.min(1, t / .45 + (i === 0 ? 1 : 0));
+    typers[i].forEach(ty => { const n = Math.max(0, Math.floor((t - ty.at) * ty.speed));
+      ty.el.textContent = ty.text.slice(0, n); ty.el.classList.toggle("typing", t >= ty.at - .3 && n < ty.text.length); });
+    extra[i]?.(t);
+    // cursor
+    const p = paths[i];
+    if (p) {
+      let a = p[0], b = p[0];
+      for (let k = 0; k < p.length; k++) { if (p[k][0] <= t) { a = p[k]; b = p[k + 1] || p[k]; } }
+      const pa = center(a[1]), pb = center(b[1]);
+      const span = b[0] - a[0], f = span > 0 ? ease(Math.min(1, (t - a[0]) / Math.min(span, 1.1))) : 1;
+      const x = pa[0] + (pb[0] - pa[0]) * f, y = pa[1] + (pb[1] - pa[1]) * f;
+      cursor.style.transform = `translate(${x - 4}px,${y - 2}px)`; cursor.style.opacity = t > .2 ? 1 : 0;
+      if (REC) {
+        const ck = [...p].reverse().find(k => k[2] && t >= k[0]);
+        const d = ck ? t - ck[0] : 9;
+        if (d < .55) { const c = center(ck[1]), q = d / .55; ripple.style.left = c[0] + "px"; ripple.style.top = c[1] + "px";
+          ripple.style.opacity = 1 - q; ripple.style.transform = `scale(${.3 + 1.1 * q})`; } else ripple.style.opacity = 0;
+      } else {
+      const click = p.find(k => k[2] && t >= k[0] && t < k[0] + .1);
+      if (click && lastClick !== i + ":" + click[0]) { lastClick = i + ":" + click[0];
+        const c = center(click[1]); ripple.style.left = c[0] + "px"; ripple.style.top = c[1] + "px";
+        ripple.classList.remove("go"); void ripple.offsetWidth; ripple.classList.add("go"); }
+      }
+    } else cursor.style.opacity = 0;
+    bar.style.width = (T / TOTAL * 100) + "%"; timeEl.textContent = `${fmt(T)} / ${fmt(TOTAL)}`;
+  }
+  function frame(now) {
+    if (playing) { T += (now - last) / 1000; last = now;
+      if (T >= TOTAL) { T = TOTAL - .001; setPlaying(false); window.__done = true; } }
+    render(); requestAnimationFrame(frame);
+  }
+  function setPlaying(v) { playing = v; last = performance.now(); playBtn.textContent = v ? "❚❚ השהיה" : (T >= TOTAL - .01 ? "↺ שוב" : "▶ הפעלה"); }
+  function seek(v) { T = Math.max(0, Math.min(TOTAL - .001, v)); lastClick = null; }
+  let started = REC;
+  playBtn.onclick = () => { if (!started || T >= TOTAL - .01) { seek(0); started = true; } setPlaying(!playing); };
+  document.getElementById("next").onclick = () => { const i = starts.findIndex((s, k) => T < s + durs[k]); seek(starts[Math.min(i + 1, scenes.length - 1)]); };
+  document.getElementById("prev").onclick = () => { const i = starts.findIndex((s, k) => T < s + durs[k]); seek(starts[Math.max((T - starts[i] > 1.5 ? i : i - 1), 0)]); };
+  document.getElementById("scrub").onclick = e => { const r = e.currentTarget.getBoundingClientRect(); seek((r.right - e.clientX) / r.width * TOTAL); };
+  window.__start = () => { seek(0); setPlaying(true); };
+  window.__seek = v => { seek(v); render(); };
+  window.__frame = v => { T = v; render(); };
+  window.__total = TOTAL;
+  requestAnimationFrame(frame);
+  if (!REC) seek(4.2); // opens paused on the finished title card
+})();
+</script>
