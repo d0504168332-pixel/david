@@ -1,22 +1,31 @@
 import "server-only";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "./supabase/server";
 import type { Business, Profile } from "./types";
 
-export async function getSession() {
+/**
+ * הסשן של הבקשה הנוכחית — פעם אחת לכל בקשה (layout ודף חולקים אותו).
+ * ה-middleware כבר אימת את המשתמש מול Supabase באותה בקשה, וכל שאילתה למסד נבדקת שוב לפי ה-JWT (RLS),
+ * לכן כאן קוראים את הסשן מהעוגייה בלי סיבוב נוסף לשרת ההזדהות.
+ * הפרופיל והעסק נטענים בשאילתה אחת.
+ */
+export const getSession = cache(async () => {
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) return null;
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle<Profile>();
-  let business: Business | null = null;
-  if (profile?.business_id) {
-    const { data } = await supabase.from("businesses").select("*").eq("id", profile.business_id).maybeSingle<Business>();
-    business = data ?? null;
-  }
-  return { supabase, user, profile: profile ?? null, business };
-}
+  const { data } = await supabase
+    .from("profiles")
+    .select("*, business:businesses!profiles_business_id_fkey(*)")
+    .eq("id", user.id)
+    .maybeSingle<Profile & { business: Business | null }>();
+  if (!data) return { supabase, user, profile: null, business: null };
+  const { business, ...profile } = data;
+  return { supabase, user, profile: profile as Profile, business: business ?? null };
+});
 
 export async function requireSession() {
   const s = await getSession();

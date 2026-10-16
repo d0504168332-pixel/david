@@ -28,6 +28,15 @@ export default function ProfileEditor({ profile, businessName, taxId }: { profil
   const [msg, setMsg] = useState<{ error?: string; ok?: string } | undefined>();
   const [pending, start] = useTransition();
   const set = <K extends keyof ProfileInput>(k: K, v: ProfileInput[K]) => setP((x) => ({ ...x, [k]: v }));
+  const save = () =>
+    start(async () => {
+      setMsg(undefined);
+      if (p.signature_style === "drawn" && !p.signature_image) {
+        setMsg({ error: "ציירו חתימה או בחרו סגנון אחר" });
+        return;
+      }
+      setMsg(await updateMyProfile(p));
+    });
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
@@ -51,7 +60,7 @@ export default function ProfileEditor({ profile, businessName, taxId }: { profil
         </section>
 
         <section className="card p-5">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-[17px] font-extrabold">חתימה</h2>
             <label className="flex items-center gap-2 text-sm font-semibold text-stone-600">
               להציג בהצעות <Toggle checked={p.show_signature} onChange={(v) => set("show_signature", v)} />
@@ -63,7 +72,7 @@ export default function ProfileEditor({ profile, businessName, taxId }: { profil
                 key={s.id}
                 type="button"
                 onClick={() => set("signature_style", s.id)}
-                className={`flex h-28 flex-col items-center justify-between rounded-xl border-2 p-2 transition ${p.signature_style === s.id ? "border-brand bg-brand/5" : "border-stone-200 hover:border-stone-300"}`}
+                className={`flex h-24 min-w-0 flex-col sm:h-28 items-center justify-between rounded-xl border-2 p-2 transition ${p.signature_style === s.id ? "border-brand bg-brand/5" : "border-stone-200 hover:border-stone-300"}`}
               >
                 <div className="grid flex-1 place-items-center overflow-hidden">
                   {s.id === "drawn" ? (
@@ -89,7 +98,7 @@ export default function ProfileEditor({ profile, businessName, taxId }: { profil
         </section>
 
         <section className="card p-5">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-[17px] font-extrabold">חותמת</h2>
             <label className="flex items-center gap-2 text-sm font-semibold text-stone-600">
               להציג בהצעות <Toggle checked={p.show_stamp} onChange={(v) => set("show_stamp", v)} />
@@ -102,9 +111,9 @@ export default function ProfileEditor({ profile, businessName, taxId }: { profil
                 key={shape}
                 type="button"
                 onClick={() => set("stamp_shape", shape)}
-                className={`flex h-44 flex-col items-center justify-between gap-1 overflow-hidden rounded-xl border-2 p-2 transition ${p.stamp_shape === shape ? "border-brand bg-brand/5" : "border-stone-200 hover:border-stone-300"}`}
+                className={`flex h-36 min-w-0 flex-col items-center justify-between gap-1 overflow-hidden sm:h-44 rounded-xl border-2 p-2 transition ${p.stamp_shape === shape ? "border-brand bg-brand/5" : "border-stone-200 hover:border-stone-300"}`}
               >
-                <div className="grid w-full flex-1 place-items-center overflow-hidden">
+                <div className="grid w-full flex-1 origin-center scale-[0.78] place-items-center sm:scale-100">
                   <Stamp businessName={businessName} fullName={p.full_name || "השם שלך"} jobTitle={p.job_title} taxId={taxId} color={p.stamp_color} shape={shape} size={shape === "round" ? 112 : shape === "rect" ? 88 : 104} />
                 </div>
                 <span className="text-xs font-semibold text-stone-600">{label}</span>
@@ -122,7 +131,7 @@ export default function ProfileEditor({ profile, businessName, taxId }: { profil
       <div className="lg:sticky lg:top-6 lg:self-start">
         <div className="card overflow-hidden">
           <div className="border-b border-stone-100 px-5 py-3 text-sm font-semibold text-stone-500">כך זה ייראה בתחתית ההצעה</div>
-          <div className="bg-white px-6 py-8">
+          <div className="bg-white px-4 py-6 sm:px-6 sm:py-8">
             <div className="flex items-end justify-between gap-2">
               <div className="text-[13px]">
                 <div className="text-stone-500">בברכה,</div>
@@ -145,26 +154,29 @@ export default function ProfileEditor({ profile, businessName, taxId }: { profil
               </div>
             </div>
           </div>
-          <div className="space-y-3 border-t border-stone-100 p-4">
+          <div className="hidden space-y-3 border-t border-stone-100 p-4 lg:block">
             <FormMessage state={msg} />
             <button
               className="btn-primary w-full"
               disabled={pending}
-              onClick={() =>
-                start(async () => {
-                  setMsg(undefined);
-                  if (p.signature_style === "drawn" && !p.signature_image) {
-                    setMsg({ error: "ציירו חתימה או בחרו סגנון אחר" });
-                    return;
-                  }
-                  setMsg(await updateMyProfile(p));
-                })
-              }
+              onClick={save}
             >
               {pending ? <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Save className="size-4" />}
               שמירה
             </button>
           </div>
+        </div>
+      </div>
+      {/* מובייל: כפתור שמירה קבוע בתחתית */}
+      <div className="no-print sticky bottom-20 z-20 lg:hidden">
+        <div className="card flex items-center gap-3 p-3 shadow-lg">
+          <div className="min-w-0 flex-1 text-sm">
+            <FormMessage state={msg} />
+          </div>
+          <button className="btn-primary shrink-0" disabled={pending} onClick={save}>
+            {pending ? <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Save className="size-4" />}
+            שמירה
+          </button>
         </div>
       </div>
     </div>
