@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>סגרנו – פרסומת</title>
+<style>
+/* מסגרת 540×960 (מוקלטת ב-x2 → 1080×1920, אנכי לרשתות) */
+:root{
+  --ink:#16263F; --ink2:#22385A; --gold:#F2A93B; --paper:#F6F3EC; --mute:#5B6577; --go:#1F9D6A; --wa:#25D366;
+  --f:"Liberation Sans","FreeSans",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:#000}
+#stage{position:relative;width:540px;height:960px;overflow:hidden;background:var(--ink);color:var(--paper);font-family:var(--f);direction:rtl}
+.scene{position:absolute;inset:0;opacity:0;visibility:hidden}
+.scene.active{visibility:visible}
+.h{position:absolute;top:92px;right:36px;left:36px;font-size:44px;line-height:1.12;font-weight:700;letter-spacing:-.5px}
+.h b{color:var(--gold);font-weight:700}
+.sub{position:absolute;right:36px;left:36px;font-size:22px;line-height:1.4;color:#C9D2E0;font-weight:700}
+.card{background:#fff;color:var(--ink);border-radius:22px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;font-size:17px;font-weight:700;background:#FFF1D9;color:#7A4A06}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid #E6E1D6;font-size:19px;font-weight:700}
+.row:last-child{border-bottom:0}
+.price{font-variant-numeric:tabular-nums}
+.phone{position:absolute;width:300px;height:560px;border-radius:44px;background:#0B1422;padding:12px;box-shadow:0 30px 70px rgba(0,0,0,.45)}
+.scr{width:100%;height:100%;border-radius:34px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.btn{display:flex;align-items:center;justify-content:center;height:54px;border-radius:14px;font-size:20px;font-weight:700}
+.note{display:flex;align-items:center;gap:12px;background:#fff;color:var(--ink);border-radius:18px;padding:14px 16px;font-size:18px;font-weight:700;box-shadow:0 14px 34px rgba(0,0,0,.3)}
+.ico{flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center}
+.ico svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.feat{background:rgba(246,243,236,.07);border:1px solid rgba(246,243,236,.14);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:8px;font-size:18px;font-weight:700;line-height:1.3}
+.feat .ico{background:var(--gold);color:var(--ink)}
+.typing::after{content:"";display:inline-block;width:2px;height:1em;background:currentColor;vertical-align:-2px;margin-inline-start:2px}
+.progress{position:absolute;bottom:0;right:0;height:5px;background:var(--gold);z-index:9}
+.brandtag{position:absolute;top:34px;right:36px;display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;color:var(--paper);opacity:.9;z-index:8}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="brandtag" id="brandtag">
+    <svg width="28" height="28" viewBox="0 0 120 120" aria-hidden="true"><rect width="120" height="120" rx="30" fill="#F6F3EC"/><path d="M28 62 L50 83 C64 63 78 46 97 29" fill="none" stroke="#16263F" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    סגרנו
+  </div>
+
+  <!-- 0. hook -->
+  <section class="scene" data-dur="4.6">
+    <div class="h pop" data-at="0.15">כמה זמן לוקח לך<br>להוציא <b>הצעת מחיר?</b></div>
+    <div style="position:absolute;top:330px;left:0;right:0;display:flex;justify-content:center">
+      <div class="pop" data-at="0.7" style="position:relative;width:250px;height:250px;border-radius:50%;border:10px solid rgba(246,243,236,.18)">
+        <div id="hand" style="position:absolute;left:50%;top:50%;width:8px;height:96px;margin-left:-4px;margin-top:-92px;border-radius:4px;background:var(--gold);transform-origin:50% 92px"></div>
+        <div style="position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px;border-radius:50%;background:var(--paper)"></div>
+      </div>
+    </div>
+    <div class="sub pop" data-at="1.3" style="top:620px;text-align:center;font-size:28px;color:var(--paper)">להעתיק מהמייל. לחשב.</div>
+    <div class="sub pop" data-at="1.9" style="top:664px;text-align:center;font-size:28px;color:var(--paper)">לעצב בוורד. לשלוח.</div>
+    <div class="sub pop" data-at="2.5" style="top:708px;text-align:center;font-size:28px;color:var(--gold)">ולחכות.</div>
+    <div class="pop" data-at="3.1" style="position:absolute;top:790px;left:0;right:0;text-align:center;font-size:64px;font-weight:700;color:var(--gold)" ><span data-count="45" data-from="0" data-at="3.1" data-span="1">0</span> דקות</div>
+  </section>
+
+  <!-- 1. logo -->
+  <section class="scene" data-dur="4.4" style="background:var(--paper);color:var(--ink)">
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px">
+      <div class="pop" data-at="0.1">
+        <svg width="170" height="170" viewBox="0 0 120 120" aria-hidden="true">
+          <rect width="120" height="120" rx="30" fill="#16263F"/>
+          <path class="draw" data-at="0.45" data-len="110" d="M28 62 L50 83 C64 63 78 46 97 29" fill="none" stroke="#F2A93B" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="pop" data-at="1.1" style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:96px;font-weight:700;letter-spacing:-2px;line-height:1">סגרנו</span>
+        <svg width="46" height="46" viewBox="0 0 54 54" aria-hidden="true" style="margin-top:28px"><circle cx="27" cy="27" r="27" fill="#F2A93B"/><path d="M15 28 L24 37 L40 18" fill="none" stroke="#16263F" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="pop" data-at="1.8" style="font-size:30px;font-weight:700;color:var(--mute)">הצעות מחיר שנסגרות.</div>
+    </div>
+  </section>
+
+  <!-- 2. paste request -->
+  <section class="scene" data-dur="7.2">
+    <div class="h pop" data-at="0.1">מדביקים את <b>המייל</b><br>של הלקוח</div>
+    <div class="card pop" data-at="0.6" style="position:absolute;top:290px;right:36px;left:36px;padding:18px 20px;font-size:19px;line-height:1.55;font-weight:700;color:#34425A">
+      <div style="font-size:15px;color:var(--mute);margin-bottom:6px">מאת: רונית · נובה טכנולוגיות</div>
+      <div data-type="0.9" data-speed="38">צריכים אוטובוס ל-50 נוסעים מתל אביב לירושלים ב-20/11, יציאה ב-08:00, הלוך וחזור.</div>
+    </div>
+    <div class="sub pop" data-at="3.5" style="top:520px;text-align:center;color:var(--gold);font-size:26px">והמערכת מבינה לבד ↓</div>
+    <div style="position:absolute;top:580px;right:36px;left:36px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center">
+      <span class="chip pop" data-at="4.0">מוצא: תל אביב</span>
+      <span class="chip pop" data-at="4.3">יעד: ירושלים</span>
+      <span class="chip pop" data-at="4.6">20/11 · 08:00</span>
+      <span class="chip pop" data-at="4.9">50 נוסעים</span>
+      <span class="chip pop" data-at="5.2">הלוך-חזור</span>
+    </div>
+    <div class="sub pop" data-at="5.8" style="top:760px;text-align:center;font-size:24px">בלי להקליד שום דבר מחדש</div>
+  </section>
+
+  <!-- 3. pricing -->
+  <section class="scene" data-dur="6.6">
+    <div class="h pop" data-at="0.1">המחיר <b>מחושב לבד</b><br>לפי המחירון שלך</div>
+    <div class="card pop" data-at="0.6" style="position:absolute;top:300px;right:36px;left:36px;overflow:hidden">
+      <div class="row" style="background:#F6F3EC"><span>מרחק</span><span class="price"><span data-count="124" data-at="0.9" data-span="1.1">0</span> ק״מ</span></div>
+      <div class="row rise" data-at="1.6"><span>אוטובוס 50 מקומות</span><span class="price" style="color:var(--go)">הכי משתלם</span></div>
+      <div class="row rise" data-at="2.0"><span>2 מידיבוסים</span><span class="price" style="color:var(--mute)">₪3,900</span></div>
+      <div class="row rise" data-at="2.4"><span>3 מיניבוסים</span><span class="price" style="color:var(--mute)">₪4,650</span></div>
+    </div>
+    <div class="pop" data-at="3.2" style="position:absolute;top:620px;left:0;right:0;text-align:center">
+      <div style="font-size:24px;font-weight:700;color:#C9D2E0">מחיר מוצע</div>
+      <div style="font-size:84px;font-weight:700;color:var(--gold);line-height:1.1" class="price">₪<span data-count="2340" data-at="3.3" data-span="1.2" data-sep="1">0</span></div>
+    </div>
+    <div class="sub pop" data-at="4.6" style="top:800px;text-align:center;font-size:22px">כולל המתנה, תוספת לילה ושבת · אפשר לשנות בלחיצה</div>
+  </section>
+
+  <!-- 4. document -->
+  <section class="scene" data-dur="6.2">
+    <div class="h pop" data-at="0.1">הצעה <b>מעוצבת</b><br>עם הלוגו והחותמת שלך</div>
+    <div class="card pop" data-at="0.5" style="position:absolute;top:300px;right:56px;left:56px;height:560px;overflow:hidden;border-radius:14px">
+      <div style="background:var(--ink);color:#fff;padding:22px 24px;display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:42px;height:42px;border-radius:10px;background:var(--gold);color:var(--ink);display:grid;place-items:center;font-size:22px;font-weight:700">ה</div><div style="font-size:20px;font-weight:700">הסעות הדרך</div></div>
+        <div style="text-align:left"><div style="font-size:22px">הצעת מחיר</div><div style="font-size:15px;color:var(--gold);font-weight:700">Q-1013</div></div>
+      </div>
+      <div style="padding:18px 24px;display:flex;flex-direction:column;gap:10px;font-size:16px;font-weight:700">
+        <div style="color:var(--mute);font-size:13px">לכבוד</div>
+        <div style="font-size:19px">נובה טכנולוגיות</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="chip" style="font-size:13px;padding:5px 10px">תל אביב ← ירושלים</span><span class="chip" style="font-size:13px;padding:5px 10px">20/11 · 08:00</span></div>
+        <div style="display:flex;justify-content:space-between;border-top:2px solid #E6E1D6;padding-top:10px"><span>הסעה הלוך-חזור</span><span class="price">₪2,340</span></div>
+        <div style="display:flex;justify-content:space-between;background:var(--ink);color:#fff;border-radius:10px;padding:10px 12px"><span>לתשלום כולל מע״מ</span><span class="price">₪2,761</span></div>
+      </div>
+      <div class="stamp" data-at="2.1" style="position:absolute;bottom:58px;left:30px;width:140px;height:140px;border-radius:50%;border:6px solid #1F3A5F;color:#1F3A5F;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(-12deg)">
+        <div style="font-size:12px;font-weight:700;letter-spacing:2px">הסעות הדרך</div>
+        <div style="font-size:30px;font-weight:700;line-height:1.1">דוד כהן</div>
+        <div style="font-size:12px;font-weight:700">מנכ״ל</div>
+      </div>
+      <div class="fade" data-at="3.0" style="position:absolute;bottom:40px;right:30px;font-family:'FreeSerif',serif;font-style:italic;font-size:38px;color:#1E3A8A">David K.</div>
+    </div>
+  </section>
+
+  <!-- 5. whatsapp + approve -->
+  <section class="scene" data-dur="7.2">
+    <div class="h pop" data-at="0.1">שולחים בוואטסאפ.<br>הלקוח <b>מאשר בלחיצה.</b></div>
+    <div class="phone pop" data-at="0.5" style="top:290px;right:120px">
+      <div class="scr" style="background:#ECE5DD">
+        <div style="background:#075E54;color:#fff;padding:18px 16px 12px;font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px"><div style="width:34px;height:34px;border-radius:50%;background:#cfe0f0"></div>רונית</div>
+        <div style="flex:1;padding:16px;display:flex;flex-direction:column;gap:10px;justify-content:flex-start">
+          <div class="pop" data-at="1.0" style="align-self:flex-start;max-width:92%;background:#DCF8C6;color:#111;border-radius:14px;padding:12px;font-size:15px;line-height:1.5;font-weight:700">שלום רונית, מצורפת הצעת מחיר Q-1013 על סך ₪2,761.<br><span style="color:#0A66C2">לצפייה ואישור ←</span></div>
+          <div class="card pop" data-at="2.0" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px">
+            <div style="font-size:15px;font-weight:700;color:var(--mute)">הצעת מחיר · הסעות הדרך</div>
+            <div style="font-size:26px;font-weight:700" class="price">₪2,761</div>
+            <div style="height:40px;border-radius:10px;border:2px solid #E6E1D6;display:flex;align-items:center;padding:0 10px;font-size:17px;font-weight:700"><span data-type="2.6" data-speed="6">רונית לוי</span></div>
+            <div class="btn tap" data-at="4.2" style="background:var(--go);color:#fff;font-size:18px">אני מאשרת את ההצעה</div>
+          </div>
+        </div>
+        <div class="stamp" data-at="4.6" style="position:absolute;inset:0;background:rgba(31,157,106,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff">
+          <svg width="110" height="110" viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="25" fill="none" stroke="#fff" stroke-width="3"/><path d="M15 28 L24 37 L40 18" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div style="font-size:40px;font-weight:700">סגרנו!</div>
+          <div style="font-size:18px;font-weight:700;opacity:.9">ההצעה אושרה</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. automation -->
+  <section class="scene" data-dur="6.4">
+    <div class="h pop" data-at="0.1">ומשם — <b>הכול אוטומטי</b></div>
+    <div style="position:absolute;top:300px;right:36px;left:36px;display:flex;flex-direction:column;gap:18px">
+      <div class="note slide" data-at="0.6"><div class="ico" style="background:#E3EEFB;color:#1D4ED8"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div><div>נובה טכנולוגיות פתחה את ההצעה<div style="font-size:14px;color:var(--mute)">התראה אליך — זה הזמן להתקשר</div></div></div>
+      <div class="note slide" data-at="1.4"><div class="ico" style="background:#DDF5EA;color:var(--go)"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg></div><div>ההצעה אושרה ✓<div style="font-size:14px;color:var(--mute)">רונית לוי · היום 10:42</div></div></div>
+      <div class="note slide" data-at="2.2"><div class="ico" style="background:#FFF1D9;color:#B26A00"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="11" rx="2"/><path d="M3 11h18M7 17v2M17 17v2"/></svg></div><div>הנסיעה נשלחה לסדרן<div style="font-size:14px;color:var(--mute)">כולל קובץ מוכן ל-YIT</div></div></div>
+      <div class="note slide" data-at="3.0"><div class="ico" style="background:#F1E8FE;color:#6D28D9"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg></div><div>לקוח שלא ענה? תזכורת נשלחת לבד<div style="font-size:14px;color:var(--mute)">במייל, מהכתובת של העובד</div></div></div>
+    </div>
+    <div class="sub pop" data-at="4.0" style="top:820px;text-align:center;font-size:24px">אתה רק מאשר מחיר ולוחץ שליחה.</div>
+  </section>
+
+  <!-- 7. features -->
+  <section class="scene" data-dur="5.2">
+    <div class="h pop" data-at="0.1">כל מה שהעסק<br><b>צריך במקום אחד</b></div>
+    <div style="position:absolute;top:320px;right:36px;left:36px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="feat pop" data-at="0.4"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H5.2L4 17.2z"/></svg></div>בקשות מהמייל ומקישור אישי ללקוח</div>
+      <div class="feat pop" data-at="0.6"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg></div>דשבורד חודשי ואחוזי סגירה</div>
+      <div class="feat pop" data-at="0.8"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg></div>כמה אפשרויות בהצעה אחת</div>
+      <div class="feat pop" data-at="1.0"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 12l3-3 3 3M6 9v9h12"/></svg></div>התראה על פער מחיר מול הצעות קודמות</div>
+      <div class="feat pop" data-at="1.2"><div class="ico"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></div>אפליקציה בטלפון</div>
+      <div class="feat pop" data-at="1.4"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5M16 11a3 3 0 1 0 0-6M21 20c0-2-1-4-4-4.5"/></svg></div>כמה עובדים, לכל אחד חתימה משלו</div>
+    </div>
+  </section>
+
+  <!-- 8. CTA -->
+  <section class="scene" data-dur="5.6" style="background:var(--paper);color:var(--ink)">
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;text-align:center;padding:0 36px">
+      <div class="pop" data-at="0.1">
+        <svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true"><rect width="120" height="120" rx="30" fill="#16263F"/><path class="draw" data-at="0.3" data-len="110" d="M28 62 L50 83 C64 63 78 46 97 29" fill="none" stroke="#F2A93B" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="pop" data-at="0.7" style="font-size:37px;font-weight:700;line-height:1.25">מהבקשה ועד האישור<br><span style="color:#B26A00">בלי לרדוף אחרי אף אחד.</span></div>
+      <div class="pop" data-at="1.6" style="font-size:72px;font-weight:700;letter-spacing:-1px">סגרנו.</div>
+      <div class="pop" data-at="2.4" style="background:var(--ink);color:var(--paper);border-radius:16px;padding:16px 28px;font-size:28px;font-weight:700;direction:ltr">sgarnu.vercel.app</div>
+      <div class="pop" data-at="3.0" style="font-size:22px;font-weight:700;color:var(--mute)">דברו איתנו ופתחו עסק במערכת</div>
+    </div>
+  </section>
+
+  <div class="progress" id="progress"></div>
+</div>
+
+<script>
+(() => {
+  const stage = document.getElementById("stage");
+  const scenes = [...stage.querySelectorAll(".scene")];
+  const durs = scenes.map(s => +s.dataset.dur);
+  const starts = durs.map((_, i) => durs.slice(0, i).reduce((a, b) => a + b, 0));
+  const TOTAL = durs.reduce((a, b) => a + b, 0);
+  const clamp = x => Math.max(0, Math.min(1, x));
+  const easeOut = x => 1 - Math.pow(1 - x, 3);
+  const back = x => { const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+  const typers = scenes.map(s => [...s.querySelectorAll("[data-type]")].map(el => ({ el, text: el.textContent, at: +el.dataset.type, speed: +el.dataset.speed })));
+  typers.flat().forEach(t => t.el.textContent = "");
+  const counters = scenes.map(s => [...s.querySelectorAll("[data-count]")]);
+  const cues = scenes.map(s => [...s.querySelectorAll("[data-at]")].filter(e => !e.hasAttribute("data-count")));
+  const brandtag = document.getElementById("brandtag");
+  const hand = document.getElementById("hand");
+
+  function style(el, d) {
+    const c = el.classList, st = el.style;
+    if (c.contains("draw")) { const L = +el.dataset.len, p = easeOut(clamp(d / 0.7)); st.strokeDasharray = L; st.strokeDashoffset = L * (1 - p); return; }
+    if (c.contains("stamp")) { const p = clamp(d / 0.35); st.opacity = p > 0 ? 1 : 0; const s = p < 1 ? 1.8 - 0.8 * easeOut(p) : 1; const rot = el.style.transform.match(/rotate\([^)]*\)/); st.transform = (el.dataset.rot ?? (el.dataset.rot = (rot ? rot[0] : ""))) + ` scale(${s})`; return; }
+    if (c.contains("tap")) { st.transform = d >= 0 && d < 0.25 ? "scale(.94)" : ""; st.filter = d >= 0 && d < 0.25 ? "brightness(.9)" : ""; return; }
+    const p = clamp(d / 0.5);
+    if (c.contains("pop")) { st.opacity = p; st.transform = `translateY(${24 * (1 - easeOut(p))}px) scale(${0.96 + 0.04 * back(p)})`; return; }
+    if (c.contains("rise")) { st.opacity = p; st.transform = `translateY(${18 * (1 - easeOut(p))}px)`; return; }
+    if (c.contains("slide")) { st.opacity = p; st.transform = `translateX(${-60 * (1 - easeOut(p))}px)`; return; }
+    if (c.contains("fade")) { st.opacity = p; return; }
+  }
+
+  function render(T) {
+    let i = starts.findIndex((s, k) => T < s + durs[k]); if (i < 0) i = scenes.length - 1;
+    const t = T - starts[i];
+    scenes.forEach((s, k) => { s.classList.toggle("active", k === i || (k === i - 1 && t < 0.35)); });
+    const fadeIn = i === 0 ? 1 : clamp(t / 0.35);
+    scenes[i].style.opacity = fadeIn;
+    if (i > 0) scenes[i - 1].style.opacity = 1 - fadeIn;
+    cues[i].forEach(el => style(el, t - +el.dataset.at));
+    typers[i].forEach(ty => { const n = Math.max(0, Math.floor((t - ty.at) * ty.speed)); ty.el.textContent = ty.text.slice(0, n); ty.el.classList.toggle("typing", t >= ty.at - .3 && n < ty.text.length); });
+    counters[i].forEach(el => { const p = easeOut(clamp((t - +el.dataset.at) / +el.dataset.span)); const v = Math.round((+el.dataset.from || 0) + (+el.dataset.count - (+el.dataset.from || 0)) * p); el.textContent = el.dataset.sep ? v.toLocaleString("en-US") : v; });
+    if (hand) hand.style.transform = `rotate(${(i === 0 ? t : 0) * 300}deg)`;
+    const light = scenes[i].style.background.includes("paper") || scenes[i].getAttribute("style")?.includes("var(--paper)");
+    brandtag.style.opacity = light ? 0 : 0.9;
+    document.getElementById("progress").style.width = (T / TOTAL * 100) + "%";
+  }
+  window.__total = TOTAL;
+  window.__frame = T => render(Math.min(T, TOTAL - 0.001));
+  render(location.hash === "#rec" ? 0 : 12);
+})();
+</script>
+</body>
+</html>
