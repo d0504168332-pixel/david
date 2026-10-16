@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "הצעות מחיר מעוצבות, בקשות מלקוחות ואישור בלחיצה — מהנייד",
     lang: "he",
     dir: "rtl",
-    start_url: "/quotes",
+    start_url: "/",
     scope: "/",
     display: "standalone",
     orientation: "portrait",

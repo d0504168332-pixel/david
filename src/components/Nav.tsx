@@ -11,13 +11,14 @@ type Props = {
   user: { name: string; email: string; title: string | null };
   business: { name: string; logo: string | null } | null;
   isSuper: boolean;
+  newLeads?: number;
   isManager: boolean;
   hasBusiness: boolean;
   newRequests?: number;
   isTransport?: boolean;
 };
 
-export default function Nav({ user, business, isSuper, isManager, hasBusiness, newRequests = 0, isTransport = false }: Props) {
+export default function Nav({ user, business, isSuper, isManager, hasBusiness, newRequests = 0, newLeads = 0, isTransport = false }: Props) {
   const path = usePathname();
   const items = [
     ...(hasBusiness
@@ -37,7 +38,7 @@ export default function Nav({ user, business, isSuper, isManager, hasBusiness, n
         ]
       : []),
     { href: "/profile", label: "חתימה ופרופיל", icon: UserRound },
-    ...(isSuper ? [{ href: "/admin", label: "ניהול מערכת", icon: ShieldCheck }] : []),
+    ...(isSuper ? [{ href: "/admin", label: "ניהול מערכת", icon: ShieldCheck, badge: newLeads }] : []),
   ];
   const active = (href: string) =>
     href === "/quotes" ? path === "/quotes" || (/^\/quotes\/(?!new|import)/.test(path)) : path.startsWith(href);
@@ -102,16 +103,24 @@ export default function Nav({ user, business, isSuper, isManager, hasBusiness, n
           <BizMark business={business} small />
           <span className="truncate font-extrabold">{business?.name ?? "סגרנו"}</span>
         </div>
-        <form action={signOut}>
-          <button className="rounded-lg p-2 text-stone-500" title="התנתקות">
-            <LogOut className="size-5" />
-          </button>
-        </form>
+        <div className="flex shrink-0 items-center gap-1">
+          {isSuper ? (
+            <Link href="/admin" className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-bold ${path.startsWith("/admin") ? "bg-brand text-white" : "bg-brand/10 text-brand"}`}>
+              <ShieldCheck className="size-4" /> ניהול
+              {newLeads ? <span className="rounded-full bg-rose-500 px-1.5 text-[11px] leading-4 text-white">{newLeads}</span> : null}
+            </Link>
+          ) : null}
+          <form action={signOut}>
+            <button className="rounded-lg p-2 text-stone-500" title="התנתקות">
+              <LogOut className="size-5" />
+            </button>
+          </form>
+        </div>
       </header>
 
       {/* מובייל — תחתון */}
       <nav className="no-print fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-stone-200 bg-white/95 px-1 pb-[max(env(safe-area-inset-bottom),6px)] pt-1.5 backdrop-blur lg:hidden">
-        {items.filter((it) => !["/business", "/quotes/new", "/quotes/import", "/automation"].includes(it.href)).map((it) => {
+        {items.filter((it) => !["/business", "/quotes/new", "/quotes/import", "/automation", ...(hasBusiness ? ["/admin"] : [])].includes(it.href)).map((it) => {
           const Icon = it.icon;
           const on = active(it.href);
           return (

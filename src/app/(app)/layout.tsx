@@ -1,6 +1,7 @@
 import { requireSession } from "@/lib/auth";
 import Nav from "@/components/Nav";
 import InstallApp from "@/components/InstallApp";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     const { count } = await s.supabase.from("quote_requests").select("id", { count: "exact", head: true }).eq("business_id", s.business.id).eq("status", "new");
     newRequests = count ?? 0;
   }
+  let newLeads = 0;
+  if (s.profile.is_super_admin) {
+    const { count } = await createAdminClient().from("signup_leads").select("id", { count: "exact", head: true }).eq("status", "new");
+    newLeads = count ?? 0;
+  }
   return (
     <div style={{ ["--brand" as string]: brand }} className="min-h-screen">
       <Nav
@@ -21,6 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         isManager={s.profile.business_role === "manager"}
         hasBusiness={!!s.business}
         newRequests={newRequests}
+        newLeads={newLeads}
         isTransport={s.business?.business_type === "transport"}
       />
       <div className="lg:pr-72 print:pr-0">
