@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseRequestHeuristic } from "@/lib/parse-request";
 import { parseWithAI } from "@/lib/ai-parse";
+import { extractTrip } from "@/lib/trip-parse";
 
 export const dynamic = "force-dynamic";
 
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
     client_email: (parsed.client_email || fromEmail || null)?.slice(0, 120) ?? null,
     request_text: text.trim().slice(0, 6000) || null,
     items: isSystem ? [] : parsed.items.filter((i) => i.description).slice(0, 50).map((i) => ({ description: i.description.slice(0, 200), quantity: i.quantity || 1 })),
-    trip: null,
+    trip: isSystem ? null : extractTrip(`${subject}\n${text}`),
     notes: parsed.hints || null,
   });
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
