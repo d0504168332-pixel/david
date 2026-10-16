@@ -84,6 +84,10 @@ export default function TripPanel({ trip, onChange, pricing, onApplyPlan, onAppl
           <input type="checkbox" className="size-4 accent-[var(--brand)]" checked={!!trip.round_trip} onChange={(e) => set({ round_trip: e.target.checked })} />
           הלוך-חזור
         </label>
+        <label className="flex items-center gap-2 text-sm font-semibold text-stone-700">
+          <input type="checkbox" className="size-4 accent-[var(--brand)]" checked={!!trip.road6} onChange={(e) => set({ road6: e.target.checked })} />
+          כביש 6
+        </label>
         {trip.round_trip ? (
           <div className="flex items-center gap-2">
             <span className="text-sm text-stone-500">שעת חזור</span>
@@ -158,7 +162,7 @@ export default function TripPanel({ trip, onChange, pricing, onApplyPlan, onAppl
       {/* מחיר אוטומטי */}
       <div className="rounded-xl border border-brand/25 bg-brand/[0.04] p-3">
         <div className="mb-2 flex items-center gap-2 text-sm font-extrabold">
-          <Calculator className="size-4" /> מחיר אוטומטי לפי המחירון
+          <Calculator className="size-4" /> {pricing?.mode === "cost" ? "מחיר אוטומטי לפי מחשבון העלויות" : "מחיר אוטומטי לפי המחירון"}
           {dates.length > 1 ? <span className="text-xs font-semibold text-stone-500">· {dates.length} תאריכים</span> : null}
         </div>
         {!trip.distance_km ? (
@@ -201,8 +205,8 @@ export default function TripPanel({ trip, onChange, pricing, onApplyPlan, onAppl
               <Sparkles className="size-3.5" />
               המחיר נכנס להצעה וניתן לשינוי.{" "}
               {canEditPricing ? (
-                <a href="/automation" className="font-semibold underline" target="_blank">
-                  עריכת המחירון
+                <a href={pricing?.mode === "cost" ? "/calculator" : "/automation"} className="font-semibold underline" target="_blank">
+                  {pricing?.mode === "cost" ? "עדכון המחשבון" : "עריכת המחירון"}
                 </a>
               ) : null}
             </p>

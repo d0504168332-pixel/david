@@ -46,6 +46,11 @@ export default function AutomationForm({ transport, initial, mailReady, mapsGoog
           <h2 className="mb-1 flex items-center gap-2 text-[17px] font-extrabold">
             <Bus className="size-5 text-brand" /> מחירון קבוע
           </h2>
+          {p.mode === "cost" ? (
+            <div className="mb-4 rounded-xl bg-brand/5 p-3 text-sm ring-1 ring-brand/20">
+              ההצעות מחושבות כרגע לפי <a href="/calculator" className="font-bold text-brand underline">מחשבון העלויות</a>. כאן מגדירים את סוגי הרכבים, מחיר מינימום, תוספות ועיגול.
+            </div>
+          ) : null}
           <p className="mb-4 text-sm text-stone-500">
             לפי המחירון המערכת מחשבת מחיר לכל הצעה: מרחק × מחיר לק״מ (לפחות מחיר המינימום), המתנה ותוספות. המחיר תמיד ניתן לשינוי בהצעה עצמה.
           </p>

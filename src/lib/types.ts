@@ -42,9 +42,30 @@ export type Vehicle = {
   per_km: number; // ₪ לק"מ
   min_price: number; // מחיר מינימום לנסיעה
   wait_hour: number; // ₪ לשעת המתנה
+  // ---- מחשבון עלויות (כשהעסק מתמחר לפי עלויות) ----
+  km_per_liter?: number; // צריכת דלק: ק"מ לליטר
+  fixed_day?: number; // ביטוח, רישוי, ליסינג/פחת — ₪ ליום עבודה של הרכב
+  maint_km?: number; // בלאי: צמיגים, טיפולים — ₪ לק"מ
+  road6_toll?: number; // כביש 6 — ₪ למעבר (כיוון אחד)
+};
+
+/** הוצאה נלווית קבועה שמתווספת לכל נסיעה */
+export type CostExtra = { id: string; name: string; amount: number; per: "trip" | "km" | "hour" };
+
+/** מחשבון העלויות של חברת ההסעות — מה עולה לה נסיעה, וכמה רווח להוסיף */
+export type CostSettings = {
+  fuel_price?: number; // ₪ לליטר סולר
+  driver_hour?: number; // ₪ לשעת נהג (כולל עלויות מעביד)
+  min_hours?: number; // מינימום שעות נהג לנסיעה
+  empty_km?: number; // ק"מ ריקים לכל נסיעה (מהחניון ובחזרה)
+  profit_pct?: number; // אחוז רווח
+  extras?: CostExtra[];
 };
 
 export type Pricing = {
+  /** "km" = מחירון לפי ק"מ, "cost" = לפי מחשבון העלויות */
+  mode?: "km" | "cost";
+  cost?: CostSettings;
   vehicles?: Vehicle[];
   night_pct?: number; // תוספת לילה %
   night_from?: string; // "22:00"
@@ -155,6 +176,7 @@ export type Trip = {
   /** תאריכים נוספים לאותה נסיעה (הסעה חוזרת) */
   extra_dates?: string[];
   distance_km?: number; // כיוון אחד
+  road6?: boolean; // נוסעים בכביש 6
   duration_min?: number; // כיוון אחד
 };
 

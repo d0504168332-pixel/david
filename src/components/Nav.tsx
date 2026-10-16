@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Plus, Users, Building2, UserRound, ShieldCheck, LogOut, MailPlus, Inbox, BarChart3, Zap } from "lucide-react";
+import { FileText, Plus, Users, Building2, UserRound, ShieldCheck, LogOut, MailPlus, Inbox, BarChart3, Zap, Calculator } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import InstallApp from "@/components/InstallApp";
 import { BrandMark, BrandWordmark } from "@/components/BrandLogo";
@@ -23,9 +23,10 @@ export default function Nav({ user, business, isSuper, isManager, hasBusiness, n
   const items = [
     ...(hasBusiness
       ? [
-          { href: "/quotes", label: "הצעות מחיר", icon: FileText },
+          { href: "/quotes", label: "הצעות מחיר", short: "הצעות", icon: FileText },
           { href: "/quotes/new", label: "הצעה חדשה", icon: Plus },
-          ...(isTransport ? [{ href: "/requests", label: "בקשות מלקוחות", icon: Inbox, badge: newRequests }] : []),
+          ...(isTransport ? [{ href: "/requests", label: "בקשות מלקוחות", short: "בקשות", icon: Inbox, badge: newRequests }] : []),
+          ...(isTransport ? [{ href: "/calculator", label: "מחשבון עלויות", short: "מחשבון", icon: Calculator }] : []),
           { href: "/quotes/import", label: "ממייל להצעה", icon: MailPlus },
           { href: "/clients", label: "לקוחות", icon: Users },
           ...(isManager || isSuper
@@ -37,7 +38,7 @@ export default function Nav({ user, business, isSuper, isManager, hasBusiness, n
             : []),
         ]
       : []),
-    { href: "/profile", label: "חתימה ופרופיל", icon: UserRound },
+    { href: "/profile", label: "חתימה ופרופיל", short: "פרופיל", icon: UserRound },
     ...(isSuper ? [{ href: "/admin", label: "ניהול מערכת", icon: ShieldCheck, badge: newLeads }] : []),
   ];
   const active = (href: string) =>
@@ -120,7 +121,7 @@ export default function Nav({ user, business, isSuper, isManager, hasBusiness, n
 
       {/* מובייל — תחתון */}
       <nav className="no-print fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-stone-200 bg-white/95 px-1 pb-[max(env(safe-area-inset-bottom),6px)] pt-1.5 backdrop-blur lg:hidden">
-        {items.filter((it) => !["/business", "/quotes/new", "/quotes/import", "/automation", ...(hasBusiness ? ["/admin"] : [])].includes(it.href)).map((it) => {
+        {items.filter((it) => !["/business", "/quotes/new", "/quotes/import", "/automation", ...(hasBusiness ? ["/admin"] : []), ...(isTransport ? ["/dashboard"] : [])].includes(it.href)).map((it) => {
           const Icon = it.icon;
           const on = active(it.href);
           return (
@@ -129,7 +130,7 @@ export default function Nav({ user, business, isSuper, isManager, hasBusiness, n
                 <Icon className="size-5" strokeWidth={on ? 2.5 : 2} />
                 {"badge" in it && it.badge ? <span className="absolute -top-1.5 -right-2 rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-4 text-white">{it.badge}</span> : null}
               </span>
-              <span className="truncate">{it.label}</span>
+              <span className="max-w-full truncate">{"short" in it && it.short ? it.short : it.label}</span>
             </Link>
           );
         })}
