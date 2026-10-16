@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireBusiness } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { encrypt, presetFor } from "@/lib/mail-accounts";
 import { friendlySmtpError } from "@/lib/mailer";
@@ -17,7 +17,8 @@ export type MailConnectInput = {
 
 /** חיבור תיבת מייל: בודק התחברות, שולח מייל ניסיון לעצמך ושומר מוצפן */
 export async function connectMailbox(input: MailConnectInput): Promise<{ ok?: string; error?: string }> {
-  const { profile, business } = await requireBusiness();
+  const { profile, business } = await requireSession();
+  if (!business && !(profile.is_super_admin && input.scope === "me")) return { error: "אין עסק משויך למשתמש" };
   if (input.scope === "business" && profile.business_role !== "manager" && !profile.is_super_admin)
     return { error: "רק מנהל העסק יכול לחבר את מייל העסק" };
   const email = input.email.trim().toLowerCase();
@@ -42,10 +43,10 @@ export async function connectMailbox(input: MailConnectInput): Promise<{ ok?: st
   try {
     await t.verify();
     await t.sendMail({
-      from: { name: business.name, address: email },
+      from: { name: business?.name ?? "סגרנו", address: email },
       to: email,
       subject: `✅ המייל חובר למערכת הצעות המחיר`,
-      html: `<div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px">שלום ${profile.full_name || ""},<br>המייל <b>${email}</b> חובר בהצלחה. מעכשיו הצעות המחיר, התזכורות וההתראות של ${business.name} יישלחו ממנו.</div>`,
+      html: `<div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px">שלום ${profile.full_name || ""},<br>המייל <b>${email}</b> חובר בהצלחה. ${business ? `מעכשיו הצעות המחיר, התזכורות וההתראות של ${business.name} יישלחו ממנו.` : "מעכשיו בקשות מנוי חדשות יגיעו אליך מהמערכת."}</div>`,
     });
   } catch (e) {
     return { error: friendlySmtpError(e) };
@@ -53,7 +54,7 @@ export async function connectMailbox(input: MailConnectInput): Promise<{ ok?: st
 
   const admin = createAdminClient();
   const row = {
-    business_id: business.id,
+    business_id: business?.id ?? null,
     profile_id: input.scope === "me" ? profile.id : null,
     email,
     smtp_host: host,
@@ -64,8 +65,10 @@ export async function connectMailbox(input: MailConnectInput): Promise<{ ok?: st
     last_error: null,
     updated_at: new Date().toISOString(),
   };
-  let q = admin.from("mail_accounts").select("id").eq("business_id", business.id);
-  q = input.scope === "me" ? q.eq("profile_id", profile.id) : q.is("profile_id", null);
+  const q =
+    input.scope === "me"
+      ? admin.from("mail_accounts").select("id").eq("profile_id", profile.id)
+      : admin.from("mail_accounts").select("id").eq("business_id", business!.id).is("profile_id", null);
   const { data: existing } = await q.maybeSingle();
   const { error } = existing
     ? await admin.from("mail_accounts").update(row).eq("id", existing.id)
@@ -73,16 +76,17 @@ export async function connectMailbox(input: MailConnectInput): Promise<{ ok?: st
   if (error) return { error: "השמירה נכשלה: " + error.message };
   revalidatePath("/profile");
   revalidatePath("/business");
+  revalidatePath("/admin");
   return { ok: `המייל חובר! שלחנו מייל ניסיון ל-${email}` };
 }
 
 export async function disconnectMailbox(scope: "me" | "business") {
-  const { profile, business } = await requireBusiness();
-  if (scope === "business" && profile.business_role !== "manager" && !profile.is_super_admin) return;
+  const { profile, business } = await requireSession();
+  if (scope === "business" && (!business || (profile.business_role !== "manager" && !profile.is_super_admin))) return;
   const admin = createAdminClient();
-  let q = admin.from("mail_accounts").delete().eq("business_id", business.id);
-  q = scope === "me" ? q.eq("profile_id", profile.id) : q.is("profile_id", null);
-  await q;
+  if (scope === "me") await admin.from("mail_accounts").delete().eq("profile_id", profile.id);
+  else await admin.from("mail_accounts").delete().eq("business_id", business!.id).is("profile_id", null);
   revalidatePath("/profile");
   revalidatePath("/business");
+  revalidatePath("/admin");
 }

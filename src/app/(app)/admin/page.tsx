@@ -4,14 +4,18 @@ import { requireSuperAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import PageHeader from "@/components/PageHeader";
 import type { Business } from "@/lib/types";
+import LeadsList, { type Lead } from "./LeadsList";
+import MailboxConnect from "@/components/MailboxConnect";
 
 export default async function AdminPage() {
   const { profile } = await requireSuperAdmin();
   const admin = createAdminClient();
-  const [{ data: businesses }, { data: members }, { data: quotes }] = await Promise.all([
+  const [{ data: businesses }, { data: members }, { data: quotes }, { data: leads }, { data: myMail }] = await Promise.all([
     admin.from("businesses").select("*").order("created_at", { ascending: false }).returns<Business[]>(),
     admin.from("profiles").select("id,business_id"),
     admin.from("quotes").select("business_id"),
+    admin.from("signup_leads").select("*").order("created_at", { ascending: false }).limit(100).returns<Lead[]>(),
+    admin.from("mail_accounts").select("email,verified_at,last_error").eq("profile_id", profile.id).maybeSingle(),
   ]);
   const mc: Record<string, number> = {};
   (members ?? []).forEach((m) => m.business_id && (mc[m.business_id] = (mc[m.business_id] ?? 0) + 1));
@@ -33,6 +37,17 @@ export default async function AdminPage() {
         <Stat icon={<Building2 className="size-5" />} label="עסקים" value={businesses?.length ?? 0} />
         <Stat icon={<Users className="size-5" />} label="משתמשים" value={(members ?? []).filter((m) => m.business_id).length} />
         <Stat icon={<FileText className="size-5" />} label="הצעות במערכת" value={quotes?.length ?? 0} />
+      </div>
+
+      <LeadsList leads={leads ?? []} />
+      <div className="mb-6">
+        <MailboxConnect
+          scope="me"
+          status={myMail ? { email: myMail.email, verified: !!myMail.verified_at, error: myMail.last_error } : null}
+          defaultEmail={profile.email}
+          title="המייל שלי לקבלת בקשות מנוי"
+          subtitle="כשמישהו משאיר פרטים, תקבל עליו מייל. החיבור כאן משמש רק לשליחת ההתראה אליך — הבקשות נשמרות כאן גם בלי חיבור."
+        />
       </div>
 
       {(businesses ?? []).length === 0 ? (
