@@ -10,11 +10,12 @@ import { STATUS_CLASS, STATUS_LABEL, calcTotals, formatDate, quoteNumber } from 
 import type { Profile, Quote } from "@/lib/types";
 import { tripCsv } from "@/lib/trip-export";
 import { toWin1255, yitText } from "@/lib/yit-export";
-import { mailConfigured } from "@/lib/mailer";
+import { mailStatus } from "@/lib/mail-accounts";
 
 export default async function QuoteViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { supabase, business } = await requireBusiness();
+  const { supabase, business, profile } = await requireBusiness();
+  const mail = await mailStatus(business.id, profile.id);
   const { data: quote } = await supabase.from("quotes").select("*").eq("id", id).maybeSingle<Quote>();
   if (!quote) notFound();
   let author: Partial<Profile> | null = null;
@@ -98,7 +99,7 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ id: 
             tripCsv={csv}
             yitB64={yitB64}
             canRemind={quote.status === "sent"}
-            mailReady={mailConfigured()}
+            mailReady={mail.ready}
           />
         </div>
       </div>

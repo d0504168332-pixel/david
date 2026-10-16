@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { SmtpAccount } from "./mail-accounts";
+
 type Attachment = { name: string; content: string; type: string }; // content = base64
 
 /** האם מוגדר ספק שליחת מיילים */
@@ -16,7 +18,17 @@ export function mailConfigured() {
  * 1. ג'ימייל (GMAIL_USER + GMAIL_APP_PASSWORD — "סיסמת אפליקציה" של גוגל), או כל SMTP (SMTP_HOST/PORT/USER/PASS)
  * 2. Postmark (POSTMARK_SERVER_TOKEN) או Resend (RESEND_API_KEY) עם MAIL_FROM מאומת
  */
-export async function sendMail(opts: { to: string[]; subject: string; html: string; replyTo?: string; attachments?: Attachment[]; fromName?: string }) {
+export async function sendMail(opts: {
+  to: string[];
+  subject: string;
+  html: string;
+  replyTo?: string;
+  attachments?: Attachment[];
+  fromName?: string;
+  /** תיבת המייל של העובד / העסק — כשקיימת, המייל יוצא ממנה */
+  account?: SmtpAccount | null;
+}) {
+  if (opts.account) return sendSmtp(opts.account, opts);
   const gUser = process.env.GMAIL_USER?.trim();
   const gPass = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, "");
   const smtpHost = process.env.SMTP_HOST;
@@ -91,4 +103,42 @@ export async function sendMail(opts: { to: string[]; subject: string; html: stri
   } catch (e) {
     return { ok: false, error: String((e as Error)?.message ?? e) };
   }
+}
+
+/** שליחה דרך תיבת מייל ספציפית (SMTP) */
+export async function sendSmtp(
+  a: SmtpAccount,
+  opts: { to: string[]; subject: string; html: string; replyTo?: string; attachments?: Attachment[]; fromName?: string }
+) {
+  try {
+    const nodemailer = (await import("nodemailer")).default;
+    const t = nodemailer.createTransport({
+      host: a.host,
+      port: a.port,
+      secure: a.port === 465,
+      requireTLS: a.port !== 465,
+      auth: { user: a.user, pass: a.pass },
+      connectionTimeout: 10000,
+    });
+    const info = await t.sendMail({
+      from: { name: (opts.fromName ?? "").replace(/["<>]/g, "") || a.email, address: a.email },
+      to: opts.to.join(","),
+      subject: opts.subject,
+      html: opts.html,
+      replyTo: opts.replyTo,
+      attachments: (opts.attachments ?? []).map((x) => ({ filename: x.name, content: Buffer.from(x.content, "base64"), contentType: x.type })),
+    });
+    return { ok: true, status: 200, text: String(info.messageId ?? "").slice(0, 200) };
+  } catch (e) {
+    return { ok: false, error: friendlySmtpError(e) };
+  }
+}
+
+export function friendlySmtpError(e: unknown) {
+  const m = String((e as Error)?.message ?? e);
+  if (/535|Invalid login|Username and Password not accepted|authentication failed|AUTH/i.test(m))
+    return "המייל או סיסמת האפליקציה שגויים (בג'ימייל צריך סיסמת אפליקציה, לא הסיסמה הרגילה)";
+  if (/ENOTFOUND|getaddrinfo/i.test(m)) return "שרת המייל לא נמצא — בדקו את כתובת השרת";
+  if (/ETIMEDOUT|timeout|ECONNREFUSED/i.test(m)) return "אין תשובה משרת המייל — בדקו שרת ופורט";
+  return m.slice(0, 200);
 }

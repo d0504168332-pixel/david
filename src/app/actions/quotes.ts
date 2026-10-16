@@ -250,8 +250,10 @@ export async function sendQuoteEmail(id: string, to?: string): Promise<{ ok?: bo
   if (!q) return { error: "ההצעה לא נמצאה" };
   const email = (to ?? q.client_email ?? "").trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "אין כתובת מייל תקינה ללקוח" };
-  const { mailConfigured, sendMail } = await import("@/lib/mailer");
-  if (!mailConfigured()) return { error: "שליחת מיילים עוד לא חוברה במערכת" };
+  const { sendMail } = await import("@/lib/mailer");
+  const { senderFor } = await import("@/lib/mail-accounts");
+  const account = await senderFor(business.id, profile.id);
+  if (!account) return { error: "עוד לא חיברת מייל לשליחה — חבר אותו בדף 'חתימה ופרופיל'" };
   const { money, quoteNumber } = await import("@/lib/quote");
   const esc = (s: string) => s.replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c]!);
   const num = quoteNumber(business.quote_prefix, q.number);
@@ -272,8 +274,9 @@ export async function sendQuoteEmail(id: string, to?: string): Promise<{ ok?: bo
     to: [email],
     subject: `הצעת מחיר ${num} – ${business.name}`,
     html,
-    replyTo: profile.email || business.email || undefined,
-    fromName: business.name,
+    replyTo: account.email,
+    fromName: `${profile.full_name || business.name} – ${business.name}`,
+    account,
   });
   if (!r.ok) return { error: "השליחה נכשלה: " + ("error" in r ? r.error : r.status) };
   const patch: Record<string, unknown> = {};

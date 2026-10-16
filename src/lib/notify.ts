@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "./supabase/admin";
 import { sendMail } from "./mailer";
+import { senderFor } from "./mail-accounts";
 import { calcTotals, money, quoteNumber } from "./quote";
 import type { Business, Quote } from "./types";
 
@@ -45,5 +46,7 @@ export async function notifyOwner(quoteId: string, kind: "viewed" | "approved", 
     ${link ? `<p style="margin:14px 0 0"><a href="${link}" style="background:${b.primary_color};color:#fff;padding:9px 16px;border-radius:8px;text-decoration:none;font-weight:700">פתיחת ההצעה</a></p>` : ""}
   </div>
 </div>`;
-  await sendMail({ to: [to], subject, html, fromName: b.name });
+  const account = await senderFor(b.id, q.created_by);
+  if (!account) return;
+  await sendMail({ to: [to], subject, html, fromName: b.name, account });
 }

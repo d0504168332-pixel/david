@@ -4,7 +4,7 @@ import PageHeader from "@/components/PageHeader";
 import { withDefaults } from "@/lib/pricing";
 import type { QuoteTemplate } from "@/lib/types";
 import AutomationForm from "./AutomationForm";
-import { mailConfigured } from "@/lib/mailer";
+import { mailStatus } from "@/lib/mail-accounts";
 import TemplatesList from "./TemplatesList";
 
 export default async function AutomationPage() {
@@ -27,7 +27,7 @@ export default async function AutomationPage() {
           notify_on_view: business.notify_on_view ?? true,
           notify_on_approve: business.notify_on_approve ?? true,
         }}
-        mailReady={mailConfigured()}
+        mailReady={(await mailStatus(business.id, profile.id)).ready}
         mapsGoogle={!!process.env.GOOGLE_MAPS_API_KEY}
       />
       <TemplatesList templates={(templates ?? []).map((t) => ({ id: t.id, name: t.name, title: t.title, count: (t.items ?? []).length }))} />

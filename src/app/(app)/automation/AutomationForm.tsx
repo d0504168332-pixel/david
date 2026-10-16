@@ -177,7 +177,9 @@ export default function AutomationForm({ transport, initial, mailReady, mapsGoog
 
       {!mailReady ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          שליחת מיילים עדיין לא מחוברת במערכת. התזכורות וההתראות יתחילו לצאת ברגע שהחיבור יוגדר.
+          עוד לא חובר מייל לשליחה. התזכורות וההתראות יוצאות מהמייל של העובד שהפיק את ההצעה (חיבור בדף{" "}
+          <a href="/profile" className="font-bold underline">חתימה ופרופיל</a>), או ממייל העסק (חיבור בדף{" "}
+          <a href="/business" className="font-bold underline">פרטי העסק</a>).
         </div>
       ) : null}
 

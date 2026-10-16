@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "./supabase/admin";
 import { sendQuoteEvent } from "./webhook";
 import { sendMail } from "./mailer";
+import { senderFor } from "./mail-accounts";
 import { tripCsv, tripEmailHtml } from "./trip-export";
 import { toWin1255, yitText } from "./yit-export";
 import { quoteNumber } from "./quote";
@@ -18,7 +19,9 @@ export async function sendTripEmail(quoteId: string) {
   const num = quoteNumber(b.quote_prefix, q.number);
   const t = q.meta?.trip;
   const subject = `נסיעה מאושרת ${num} – ${q.client_name}${t?.date ? ` – ${t.date.split("-").reverse().join(".")}` : ""}`;
+  const account = await senderFor(b.id, q.created_by);
   const r = await sendMail({
+    account,
     to,
     subject,
     html: tripEmailHtml(q, b),

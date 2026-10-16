@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendMail } from "@/lib/mailer";
+import { senderFor } from "@/lib/mail-accounts";
 import { calcTotals, money, quoteNumber } from "@/lib/quote";
 import type { Business, Quote } from "@/lib/types";
 
@@ -48,6 +49,8 @@ export async function GET(req: NextRequest) {
         const { data } = await admin.from("profiles").select("full_name,email,phone").eq("id", q.created_by).maybeSingle();
         author = data;
       }
+      const account = await senderFor(b.id, q.created_by);
+      if (!account) continue; // אין מייל מחובר לעובד או לעסק
       const num = quoteNumber(b.quote_prefix, q.number);
       const link = `${origin}/q/${q.share_token}`;
       const html = `<div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;color:#1c2230;line-height:1.7">
@@ -62,8 +65,9 @@ export async function GET(req: NextRequest) {
         to: [q.client_email!],
         subject: `תזכורת: הצעת מחיר ${num} מ${b.name}`,
         html,
-        replyTo: author?.email ?? b.email ?? undefined,
-        fromName: b.name,
+        replyTo: account.email,
+        fromName: `${author?.full_name || b.name} – ${b.name}`,
+        account,
       });
       if (r.ok) {
         sent++;
