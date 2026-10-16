@@ -85,6 +85,7 @@ export type Client = {
   address: string | null;
   tax_id: string | null;
   notes: string | null;
+  portal_token?: string;
   created_at: string;
 };
 
@@ -189,6 +190,7 @@ export type QuoteRequest = {
   trip: Trip | null;
   notes: string | null;
   quote_id: string | null;
+  client_id?: string | null;
   source?: "form" | "email";
   subject?: string | null;
   created_at: string;

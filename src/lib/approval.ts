@@ -23,6 +23,7 @@ export async function sendTripEmail(quoteId: string) {
     subject,
     html: tripEmailHtml(q, b),
     replyTo: q.client_email ?? undefined,
+    fromName: b.name,
     attachments: [
       // קובץ לייבוא ישיר ל-YIT (אותו מבנה כמו קובץ הייצוא של YIT)
       { name: `YIT_${num}.txt`, content: Buffer.from(toWin1255(yitText(q))).toString("base64"), type: "text/plain" },

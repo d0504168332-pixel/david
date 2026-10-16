@@ -2,10 +2,55 @@ import "server-only";
 
 type Attachment = { name: string; content: string; type: string }; // content = base64
 
-/** שליחת מייל דרך Postmark (POSTMARK_SERVER_TOKEN) או Resend (RESEND_API_KEY). MAIL_FROM = כתובת שולח מאומתת */
-export async function sendMail(opts: { to: string[]; subject: string; html: string; replyTo?: string; attachments?: Attachment[] }) {
+/** האם מוגדר ספק שליחת מיילים */
+export function mailConfigured() {
+  return !!(
+    (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) ||
+    (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) ||
+    (process.env.MAIL_FROM && (process.env.POSTMARK_SERVER_TOKEN || process.env.RESEND_API_KEY))
+  );
+}
+
+/**
+ * שליחת מייל. סדר עדיפויות:
+ * 1. ג'ימייל (GMAIL_USER + GMAIL_APP_PASSWORD — "סיסמת אפליקציה" של גוגל), או כל SMTP (SMTP_HOST/PORT/USER/PASS)
+ * 2. Postmark (POSTMARK_SERVER_TOKEN) או Resend (RESEND_API_KEY) עם MAIL_FROM מאומת
+ */
+export async function sendMail(opts: { to: string[]; subject: string; html: string; replyTo?: string; attachments?: Attachment[]; fromName?: string }) {
+  const gUser = process.env.GMAIL_USER?.trim();
+  const gPass = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, "");
+  const smtpHost = process.env.SMTP_HOST;
+  if ((gUser && gPass) || (smtpHost && process.env.SMTP_USER && process.env.SMTP_PASS)) {
+    try {
+      const nodemailer = (await import("nodemailer")).default;
+      const user = gUser && gPass ? gUser : process.env.SMTP_USER!;
+      const transport = nodemailer.createTransport(
+        gUser && gPass
+          ? { host: "smtp.gmail.com", port: 465, secure: true, auth: { user: gUser, pass: gPass } }
+          : {
+              host: smtpHost,
+              port: Number(process.env.SMTP_PORT || 465),
+              secure: Number(process.env.SMTP_PORT || 465) === 465,
+              auth: { user: process.env.SMTP_USER!, pass: process.env.SMTP_PASS! },
+            }
+      );
+      const name = (opts.fromName ?? process.env.MAIL_FROM_NAME ?? "הצעות מחיר").replace(/["<>]/g, "");
+      const info = await transport.sendMail({
+        from: { name, address: user },
+        to: opts.to.join(","),
+        subject: opts.subject,
+        html: opts.html,
+        replyTo: opts.replyTo,
+        attachments: (opts.attachments ?? []).map((a) => ({ filename: a.name, content: Buffer.from(a.content, "base64"), contentType: a.type })),
+      });
+      return { ok: true, status: 200, text: String(info.messageId ?? "").slice(0, 200) };
+    } catch (e) {
+      return { ok: false, error: String((e as Error)?.message ?? e).slice(0, 300) };
+    }
+  }
+
   const from = process.env.MAIL_FROM;
-  if (!from) return { ok: false, error: "MAIL_FROM לא מוגדר" };
+  if (!from) return { ok: false, error: "שליחת מיילים לא הוגדרה (GMAIL_USER + GMAIL_APP_PASSWORD)" };
   const pm = process.env.POSTMARK_SERVER_TOKEN;
   const rs = process.env.RESEND_API_KEY;
   try {

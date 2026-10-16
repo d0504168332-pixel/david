@@ -321,3 +321,8 @@ drop policy if exists quote_templates_all on public.quote_templates;
 create policy quote_templates_all on public.quote_templates for all to authenticated
   using (business_id = public.my_business_id() or public.is_super_admin())
   with check (business_id = public.my_business_id() or public.is_super_admin());
+
+-- ===== 0004: קישור אישי ללקוח קבוע =====
+alter table public.clients add column if not exists portal_token uuid not null default gen_random_uuid();
+create unique index if not exists clients_portal_token_idx on public.clients(portal_token);
+alter table public.quote_requests add column if not exists client_id uuid references public.clients(id) on delete set null;

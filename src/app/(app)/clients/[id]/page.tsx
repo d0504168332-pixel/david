@@ -4,6 +4,7 @@ import { ChevronRight, FilePlus2, Phone, Mail, MapPin } from "lucide-react";
 import { requireBusiness } from "@/lib/auth";
 import { STATUS_CLASS, STATUS_LABEL, formatDate, money, quoteNumber } from "@/lib/quote";
 import type { Client, Quote } from "@/lib/types";
+import ClientLink from "./ClientLink";
 
 export default async function ClientHistoryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -49,6 +50,10 @@ export default async function ClientHistoryPage({ params }: { params: Promise<{ 
         <Stat label="סה״כ אושר" value={money(approved.reduce((s, q) => s + Number(q.total), 0))} />
         <Stat label="אחוז אישור" value={decided ? `${Math.round((approved.length / decided) * 100)}%` : "—"} />
       </div>
+
+      {business.business_type === "transport" && client.portal_token ? (
+        <ClientLink path={`/r/${business.request_token}?c=${client.portal_token}`} name={client.contact_name || client.name} phone={client.phone} businessName={business.name} />
+      ) : null}
 
       {client.notes ? <div className="card mb-5 whitespace-pre-wrap p-4 text-sm text-stone-600">{client.notes}</div> : null}
 

@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
         subject: `תזכורת: הצעת מחיר ${num} מ${b.name}`,
         html,
         replyTo: author?.email ?? b.email ?? undefined,
+        fromName: b.name,
       });
       if (r.ok) {
         sent++;

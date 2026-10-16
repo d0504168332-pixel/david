@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FileText, Plus, Users, Building2, UserRound, ShieldCheck, LogOut, MailPlus, Inbox, BarChart3, Zap } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
+import InstallApp from "@/components/InstallApp";
 
 type Props = {
   user: { name: string; email: string; title: string | null };
@@ -71,6 +72,7 @@ export default function Nav({ user, business, isSuper, isManager, hasBusiness, n
               </Link>
             );
           })}
+          <InstallApp variant="link" />
         </nav>
         <div className="mt-auto rounded-2xl border border-stone-200 bg-stone-50/70 p-3">
           <div className="flex items-center gap-3">

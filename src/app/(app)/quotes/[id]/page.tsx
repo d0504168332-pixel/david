@@ -10,6 +10,7 @@ import { STATUS_CLASS, STATUS_LABEL, calcTotals, formatDate, quoteNumber } from 
 import type { Profile, Quote } from "@/lib/types";
 import { tripCsv } from "@/lib/trip-export";
 import { toWin1255, yitText } from "@/lib/yit-export";
+import { mailConfigured } from "@/lib/mailer";
 
 export default async function QuoteViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -97,6 +98,7 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ id: 
             tripCsv={csv}
             yitB64={yitB64}
             canRemind={quote.status === "sent"}
+            mailReady={mailConfigured()}
           />
         </div>
       </div>

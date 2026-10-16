@@ -21,10 +21,26 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
   return { title: b ? `בקשה להצעת מחיר – ${b.name}` : "בקשה להצעת מחיר", robots: { index: false } };
 }
 
-export default async function RequestPage({ params }: { params: Promise<{ token: string }> }) {
+async function loadClient(businessToken: string, clientToken?: string) {
+  if (!clientToken || !UUID.test(clientToken)) return null;
+  const admin = createAdminClient();
+  const { data: biz } = await admin.from("businesses").select("id").eq("request_token", businessToken).maybeSingle();
+  if (!biz) return null;
+  const { data } = await admin
+    .from("clients")
+    .select("name,contact_name,phone,email,address")
+    .eq("business_id", biz.id)
+    .eq("portal_token", clientToken)
+    .maybeSingle();
+  return data;
+}
+
+export default async function RequestPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams: Promise<{ c?: string }> }) {
   const { token } = await params;
+  const { c } = await searchParams;
   const b = await load(token);
   if (!b) notFound();
+  const client = await loadClient(token, c);
   return (
     <div style={{ ["--brand" as string]: b.primary_color }} className="min-h-screen bg-stone-100">
       <header style={{ background: b.primary_color }} className="text-white">
@@ -36,13 +52,13 @@ export default async function RequestPage({ params }: { params: Promise<{ token:
             <div className="grid size-14 place-items-center rounded-2xl border border-white/40 bg-white/15 text-xl font-black">{b.name[0]}</div>
           )}
           <div>
-            <div className="text-sm text-white/70">בקשה להצעת מחיר</div>
+            <div className="text-sm text-white/70">{client ? `שלום ${client.contact_name || client.name} 👋` : "בקשה להצעת מחיר"}</div>
             <h1 className="text-2xl font-extrabold">{b.name}</h1>
           </div>
         </div>
       </header>
       <main className="mx-auto -mt-10 max-w-3xl px-4 pb-16">
-        <RequestForm token={token} type="transport" intro={b.request_intro} businessName={b.name} contact={{ phone: b.phone, email: b.email }} />
+        <RequestForm token={token} clientToken={client ? c : undefined} known={client} type="transport" intro={b.request_intro} businessName={b.name} contact={{ phone: b.phone, email: b.email }} />
       </main>
     </div>
   );

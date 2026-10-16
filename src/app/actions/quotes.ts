@@ -242,3 +242,44 @@ export async function markViewed(token: string) {
     .eq("id", q.id);
   if (!q.viewed_at) await notifyOwner(q.id, "viewed", await origin());
 }
+
+/** שליחת ההצעה ללקוח במייל ישירות מהמערכת (מהג'ימייל המחובר), עם קישור לצפייה ואישור */
+export async function sendQuoteEmail(id: string, to?: string): Promise<{ ok?: boolean; error?: string }> {
+  const { supabase, profile, business } = await requireBusiness();
+  const { data: q } = await supabase.from("quotes").select("*").eq("id", id).maybeSingle<Quote>();
+  if (!q) return { error: "ההצעה לא נמצאה" };
+  const email = (to ?? q.client_email ?? "").trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "אין כתובת מייל תקינה ללקוח" };
+  const { mailConfigured, sendMail } = await import("@/lib/mailer");
+  if (!mailConfigured()) return { error: "שליחת מיילים עוד לא חוברה במערכת" };
+  const { money, quoteNumber } = await import("@/lib/quote");
+  const esc = (s: string) => s.replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c]!);
+  const num = quoteNumber(business.quote_prefix, q.number);
+  const link = `${await origin()}/q/${q.share_token}`;
+  const multi = hasOptions(q.meta);
+  const total = multi
+    ? `החל מ-${money(Math.min(...q.meta.options!.map((o) => calcTotals(q, o.id).total)))}`
+    : money(calcTotals(q).total);
+  const html = `<div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;color:#1c2230;line-height:1.7;max-width:560px">
+  ${business.logo_url ? `<img src="${business.logo_url}" alt="" style="max-height:56px;margin-bottom:8px">` : ""}
+  <p>שלום ${esc(q.client_contact || q.client_name)},</p>
+  <p>מצורפת הצעת מחיר מס׳ <b>${esc(num)}</b>${q.title ? ` – ${esc(q.title)}` : ""} על סך <b>${esc(total)}</b>.</p>
+  <p>לצפייה בהצעה, הורדת PDF ואישור בלחיצה:</p>
+  <p><a href="${link}" style="background:${business.primary_color};color:#fff;padding:11px 20px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block">לצפייה ואישור ההצעה</a></p>
+  <p>בברכה,<br>${esc(profile.full_name || business.name)}${profile.job_title ? `<br>${esc(profile.job_title)}` : ""}<br>${esc(business.name)}${profile.phone ? `<br>${esc(profile.phone)}` : ""}</p>
+</div>`;
+  const r = await sendMail({
+    to: [email],
+    subject: `הצעת מחיר ${num} – ${business.name}`,
+    html,
+    replyTo: profile.email || business.email || undefined,
+    fromName: business.name,
+  });
+  if (!r.ok) return { error: "השליחה נכשלה: " + ("error" in r ? r.error : r.status) };
+  const patch: Record<string, unknown> = {};
+  if (q.status === "draft") Object.assign(patch, { status: "sent", sent_at: new Date().toISOString() });
+  if (!q.client_email) patch.client_email = email;
+  if (Object.keys(patch).length) await supabase.from("quotes").update(patch).eq("id", id);
+  revalidatePath(`/quotes/${id}`);
+  return { ok: true };
+}

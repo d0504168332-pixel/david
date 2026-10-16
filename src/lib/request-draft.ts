@@ -8,6 +8,7 @@ export function draftFromRequest(r: QuoteRequest, clients: Client[], history: Pa
   const em = r.client_email?.toLowerCase();
   const ph = r.client_phone?.replace(/\D/g, "");
   const match =
+    (r.client_id && clients.find((c) => c.id === r.client_id)) ||
     (em && clients.find((c) => c.email?.toLowerCase() === em)) ||
     (ph && clients.find((c) => c.phone && c.phone.replace(/\D/g, "") === ph)) ||
     clients.find((c) => c.name.trim() === r.client_name.trim()) ||

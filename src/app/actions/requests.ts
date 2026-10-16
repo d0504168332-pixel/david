@@ -7,6 +7,7 @@ import type { Trip } from "@/lib/types";
 
 export type RequestInput = {
   token: string;
+  client_token?: string;
   client_name: string;
   client_contact: string;
   client_phone: string;
@@ -48,8 +49,16 @@ export async function submitRequest(input: RequestInput): Promise<{ ok?: boolean
   const { count } = await admin.from("quote_requests").select("id", { count: "exact", head: true }).eq("business_id", biz.id).gte("created_at", since);
   if ((count ?? 0) > 20) return { error: "התקבלו הרבה בקשות בזמן קצר, נסו שוב מאוחר יותר" };
 
+  // לקוח קבוע שנכנס מהקישור האישי שלו
+  let client_id: string | null = null;
+  if (input.client_token && UUID.test(input.client_token)) {
+    const { data: c } = await admin.from("clients").select("id").eq("business_id", biz.id).eq("portal_token", input.client_token).maybeSingle();
+    client_id = c?.id ?? null;
+  }
+
   const { error } = await admin.from("quote_requests").insert({
     business_id: biz.id,
+    client_id,
     client_name: input.client_name.trim().slice(0, 120),
     client_contact: cut(input.client_contact, 120),
     client_phone: cut(input.client_phone, 40),

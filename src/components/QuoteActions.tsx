@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { Copy, Download, Mail, MessageCircle, Pencil, Printer, Share2, Trash2, CopyPlus, Check, Link2, RefreshCw, PlugZap, Bus, FileDown } from "lucide-react";
-import { deleteQuote, duplicateQuote, markSent, resendWebhook, setQuoteStatus } from "@/app/actions/quotes";
+import { deleteQuote, duplicateQuote, markSent, resendWebhook, sendQuoteEmail, setQuoteStatus } from "@/app/actions/quotes";
 import { downloadPdf, pdfFile } from "@/lib/pdf";
 import { STATUS_LABEL, money, toIntlPhone } from "@/lib/quote";
 import type { QuoteStatus } from "@/lib/types";
@@ -24,6 +24,7 @@ type Props = {
   tripCsv?: string | null;
   yitB64?: string | null;
   canRemind?: boolean;
+  mailReady?: boolean;
 };
 
 export default function QuoteActions(p: Props) {
@@ -75,7 +76,23 @@ export default function QuoteActions(p: Props) {
     window.open(url, "_blank", "noopener");
     start(() => markSent(p.id));
   };
+  const [mailMsg, setMailMsg] = useState<{ ok?: boolean; text: string } | null>(null);
+  const [mailTo, setMailTo] = useState<string | null>(null);
+  const directEmail = (to?: string) =>
+    run("mail", async () => {
+      setMailMsg(null);
+      const r = await sendQuoteEmail(p.id, to);
+      if (r.error) setMailMsg({ text: r.error });
+      else {
+        setMailMsg({ ok: true, text: `נשלח במייל ל-${to ?? p.clientEmail}` });
+        setMailTo(null);
+      }
+    });
   const email = () => {
+    if (p.mailReady) {
+      if (p.clientEmail) return directEmail();
+      return setMailTo("");
+    }
     const url = `mailto:${p.clientEmail ?? ""}?subject=${encodeURIComponent(`הצעת מחיר ${p.number} – ${p.businessName}`)}&body=${encodeURIComponent(msg)}`;
     window.location.href = url;
     start(() => markSent(p.id));
@@ -89,9 +106,24 @@ export default function QuoteActions(p: Props) {
           <button className="btn bg-[#25D366] text-white hover:brightness-105" onClick={whatsapp}>
             <MessageCircle className="size-4" /> וואטסאפ
           </button>
-          <button className="btn-ghost" onClick={email}>
-            <Mail className="size-4" /> מייל
+          <button className="btn-ghost" onClick={email} disabled={busy === "mail"}>
+            {busy === "mail" ? <Spinner /> : <Mail className="size-4" />} מייל
           </button>
+          {mailTo !== null ? (
+            <form
+              className="col-span-2 flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                directEmail(mailTo);
+              }}
+            >
+              <input className="field h-10" dir="ltr" type="email" required placeholder="client@example.com" value={mailTo} onChange={(e) => setMailTo(e.target.value)} />
+              <button className="btn-primary h-10 shrink-0 px-3 text-sm">שליחה</button>
+            </form>
+          ) : null}
+          {mailMsg ? (
+            <div className={`col-span-2 text-sm font-semibold ${mailMsg.ok ? "text-emerald-700" : "text-rose-600"}`}>{mailMsg.text}</div>
+          ) : null}
           <button className="btn-primary col-span-2" disabled={!!busy} onClick={() => run("pdf", () => downloadPdf(node(), fileName))}>
             {busy === "pdf" ? <Spinner /> : <Download className="size-4" />} הורדת PDF
           </button>

@@ -5,18 +5,31 @@ import { CheckCircle2, Plus, Trash2, Send, Bus, ArrowLeftRight } from "lucide-re
 import { submitRequest } from "@/app/actions/requests";
 import type { Trip } from "@/lib/types";
 
+type Known = { name: string; contact_name: string | null; phone: string | null; email: string | null; address: string | null } | null;
+
 type Props = {
   token: string;
+  clientToken?: string;
+  known?: Known;
   type: "general" | "transport";
   intro: string | null;
   businessName: string;
   contact: { phone: string | null; email: string | null };
 };
 
-export default function RequestForm({ token, type, intro, businessName, contact }: Props) {
-  const [f, setF] = useState({ client_name: "", client_contact: "", client_phone: "", client_email: "", request_text: "", notes: "", website: "" });
+export default function RequestForm({ token, clientToken, known = null, type, intro, businessName, contact }: Props) {
+  const [f, setF] = useState({
+    client_name: known?.name ?? "",
+    client_contact: known?.contact_name ?? "",
+    client_phone: known?.phone ?? "",
+    client_email: known?.email ?? "",
+    request_text: "",
+    notes: "",
+    website: "",
+  });
+  const [editDetails, setEditDetails] = useState(!known);
   const [items, setItems] = useState([{ description: "", quantity: 1 }]);
-  const [trip, setTrip] = useState<Trip>({ date: "", time: "", origin: "", destination: "", passengers: undefined, round_trip: false, return_time: "", stops: "" });
+  const [trip, setTrip] = useState<Trip>({ date: "", time: "", origin: known?.address ?? "", destination: "", passengers: undefined, round_trip: false, return_time: "", stops: "" });
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [pending, start] = useTransition();
@@ -41,7 +54,7 @@ export default function RequestForm({ token, type, intro, businessName, contact 
         e.preventDefault();
         setErr(null);
         start(async () => {
-          const r = await submitRequest({ token, ...f, items, trip: type === "transport" ? { ...trip, passengers: trip.passengers ? Number(trip.passengers) : undefined } : null });
+          const r = await submitRequest({ token, client_token: clientToken, ...f, items, trip: type === "transport" ? { ...trip, passengers: trip.passengers ? Number(trip.passengers) : undefined } : null });
           if (r.error) setErr(r.error);
           else setDone(true);
         });
@@ -49,7 +62,18 @@ export default function RequestForm({ token, type, intro, businessName, contact 
     >
       <section className="card p-5 sm:p-6">
         <p className="text-stone-600">{intro || "מלאו את הפרטים ונחזור אליכם עם הצעת מחיר מסודרת."}</p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        {known && !editDetails ? (
+          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-brand/[0.06] p-3 text-sm">
+            <div className="min-w-0 flex-1">
+              <div className="font-bold">{f.client_name}</div>
+              <div className="text-stone-600">{[f.client_contact, f.client_phone, f.client_email].filter(Boolean).join(" · ")}</div>
+            </div>
+            <button type="button" className="text-sm font-semibold text-brand underline" onClick={() => setEditDetails(true)}>
+              עדכון פרטים
+            </button>
+          </div>
+        ) : null}
+        <div className={`mt-5 grid gap-3 sm:grid-cols-2 ${editDetails ? "" : "hidden"}`}>
           <In id="client_name" label="שם / שם החברה *" value={f.client_name} onChange={(v) => set("client_name", v)} required />
           <In id="client_contact" label="איש קשר" value={f.client_contact} onChange={(v) => set("client_contact", v)} />
           <In id="client_phone" label="טלפון" value={f.client_phone} onChange={(v) => set("client_phone", v)} ltr type="tel" />
