@@ -5,6 +5,7 @@ import type { CostSettings, Pricing, Trip, Vehicle } from "./types";
 export const DEFAULT_COST: Required<CostSettings> = {
   fuel_price: 7.5,
   driver_hour: 75,
+  driver_hour_mini: 65,
   min_hours: 3,
   empty_km: 0,
   profit_pct: 20,
@@ -42,6 +43,7 @@ export function vehicleCost(v: Vehicle) {
     fixed_day: v.fixed_day ?? guess.fixed_day!,
     maint_km: v.maint_km ?? guess.maint_km!,
     road6_toll: v.road6_toll ?? guess.road6_toll!,
+    driver: v.driver ?? (v.seats <= 24 ? ("mini" as const) : ("bus" as const)),
   };
 }
 
@@ -105,13 +107,15 @@ export function priceForVehicle(v: Vehicle, trip: Trip, pricing: Pricing | null 
     const allKm = km + (Number(c.empty_km) || 0);
     const fuel = vc.km_per_liter > 0 ? (allKm / vc.km_per_liter) * (c.fuel_price || 0) : 0;
     const hours = Math.max(Number(c.min_hours) || 0, Math.ceil(((driveMin1 * legs) / 60 + gapHours) * 2) / 2);
-    const driver = hours * (c.driver_hour || 0);
+    const isMini = vc.driver === "mini";
+    const rate = isMini ? (c.driver_hour_mini ?? c.driver_hour ?? 0) : c.driver_hour || 0;
+    const driver = hours * rate;
     const wear = allKm * vc.maint_km;
     const road6 = trip.road6 ? legs * vc.road6_toll : 0;
     let extras = 0;
     const kmTxt = `${Math.round(allKm)} ק״מ${trip.round_trip ? " (הלוך-חזור)" : ""}${c.empty_km ? ` כולל ${c.empty_km} ריקים` : ""}`;
     lines.push(`דלק: ${kmTxt} ÷ ${vc.km_per_liter} ק״מ לליטר × ₪${c.fuel_price} = ${shekel(fuel)}`);
-    lines.push(`נהג: ${hours} שע׳ × ₪${c.driver_hour} = ${shekel(driver)}`);
+    lines.push(`${isMini ? "נהג מיניבוס" : "נהג אוטובוס"}: ${hours} שע׳ × ₪${rate} = ${shekel(driver)}`);
     if (vc.fixed_day) lines.push(`ביטוח וקבועות לרכב = ${shekel(vc.fixed_day)}`);
     if (wear) lines.push(`בלאי וטיפולים: ${Math.round(allKm)} ק״מ × ₪${vc.maint_km} = ${shekel(wear)}`);
     if (road6) lines.push(`כביש 6: ${legs} × ₪${vc.road6_toll} = ${shekel(road6)}`);

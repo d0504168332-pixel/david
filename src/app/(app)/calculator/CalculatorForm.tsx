@@ -88,8 +88,11 @@ export default function CalculatorForm({ initial, canEdit }: { initial: Pricing;
           <Field icon={<Fuel className="size-4 text-brand" />} label="מחיר סולר" hint="מה שאתה משלם בפועל לליטר">
             <Num value={c.fuel_price} onChange={(n) => setC({ fuel_price: n })} suffix="₪ לליטר" disabled={dis} />
           </Field>
-          <Field icon={<UserRound className="size-4 text-brand" />} label="עלות נהג לשעה" hint="שכר + עלויות מעביד">
+          <Field icon={<UserRound className="size-4 text-brand" />} label="נהג אוטובוס — עלות לשעה" hint="שכר + עלויות מעביד">
             <Num value={c.driver_hour} onChange={(n) => setC({ driver_hour: n })} suffix="₪ לשעה" disabled={dis} />
+          </Field>
+          <Field icon={<UserRound className="size-4 text-brand" />} label="נהג מיניבוס — עלות לשעה" hint="שכר + עלויות מעביד">
+            <Num value={c.driver_hour_mini} onChange={(n) => setC({ driver_hour_mini: n })} suffix="₪ לשעה" disabled={dis} />
           </Field>
           <Field label="מינימום שעות נהג" hint="גם נסיעה קצרה תחושב לפחות לפי זה">
             <Num value={c.min_hours} onChange={(n) => setC({ min_hours: n })} suffix="שעות" disabled={dis} w="w-20" />
@@ -116,6 +119,13 @@ export default function CalculatorForm({ initial, canEdit }: { initial: Pricing;
                 {v.name} <span className="text-xs font-semibold text-stone-500">· {v.seats} מקומות</span>
               </div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm">
+                <label className="col-span-2 min-w-0">
+                  <span className="text-xs font-semibold text-stone-500">מי נוהג ברכב</span>
+                  <select className="field" value={v.driver} disabled={dis} onChange={(e) => setV(v.id, { driver: e.target.value as "bus" | "mini" })}>
+                    <option value="bus">נהג אוטובוס (₪{c.driver_hour ?? 0} לשעה)</option>
+                    <option value="mini">נהג מיניבוס (₪{c.driver_hour_mini ?? 0} לשעה)</option>
+                  </select>
+                </label>
                 <label className="min-w-0">
                   <span className="text-xs font-semibold text-stone-500">צריכת דלק</span>
                   <Num value={v.km_per_liter} onChange={(n) => setV(v.id, { km_per_liter: n })} suffix="ק״מ/ליטר" disabled={dis} w="w-20" />

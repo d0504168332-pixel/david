@@ -47,6 +47,7 @@ export type Vehicle = {
   fixed_day?: number; // ביטוח, רישוי, ליסינג/פחת — ₪ ליום עבודה של הרכב
   maint_km?: number; // בלאי: צמיגים, טיפולים — ₪ לק"מ
   road6_toll?: number; // כביש 6 — ₪ למעבר (כיוון אחד)
+  driver?: "bus" | "mini"; // איזה נהג נוהג ברכב (נהג אוטובוס / נהג מיניבוס)
 };
 
 /** הוצאה נלווית קבועה שמתווספת לכל נסיעה */
@@ -55,7 +56,8 @@ export type CostExtra = { id: string; name: string; amount: number; per: "trip" 
 /** מחשבון העלויות של חברת ההסעות — מה עולה לה נסיעה, וכמה רווח להוסיף */
 export type CostSettings = {
   fuel_price?: number; // ₪ לליטר סולר
-  driver_hour?: number; // ₪ לשעת נהג (כולל עלויות מעביד)
+  driver_hour?: number; // ₪ לשעת נהג אוטובוס (כולל עלויות מעביד)
+  driver_hour_mini?: number; // ₪ לשעת נהג מיניבוס
   min_hours?: number; // מינימום שעות נהג לנסיעה
   empty_km?: number; // ק"מ ריקים לכל נסיעה (מהחניון ובחזרה)
   profit_pct?: number; // אחוז רווח

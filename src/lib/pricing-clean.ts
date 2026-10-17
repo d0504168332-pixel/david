@@ -27,6 +27,7 @@ export function cleanPricing(p: Pricing): Pricing | { error: string } {
       fixed_day: opt(v.fixed_day, 0, 100000),
       maint_km: opt(v.maint_km, 0, 100),
       road6_toll: opt(v.road6_toll, 0, 5000),
+      driver: v.driver === "mini" ? "mini" : v.driver === "bus" ? "bus" : undefined,
     }));
   if (!vehicles.length) return { error: "נא להגדיר לפחות סוג רכב אחד" };
   const c = p.cost ?? {};
@@ -44,6 +45,7 @@ export function cleanPricing(p: Pricing): Pricing | { error: string } {
     cost: {
       fuel_price: num(c.fuel_price, 0, 100, 7.5),
       driver_hour: num(c.driver_hour, 0, 2000, 75),
+      driver_hour_mini: num(c.driver_hour_mini ?? c.driver_hour, 0, 2000, 65),
       min_hours: num(c.min_hours, 0, 24, 0),
       empty_km: num(c.empty_km, 0, 1000, 0),
       profit_pct: num(c.profit_pct, 0, 500, 0),
