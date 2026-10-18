@@ -22,14 +22,46 @@ function duration(from?: string, to?: string) {
   return `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
 }
 
+/** שעה בפורמט HH:MM בלבד (YIT דוחה "8:00" או "8.00") */
+export function hhmm(v?: string | null) {
+  const m = String(v ?? "").trim().match(/^(\d{1,2})[:.](\d{2})/);
+  if (!m) return "";
+  const h = Number(m[1]);
+  const mi = Number(m[2]);
+  if (h > 23 || mi > 59) return "";
+  return `${String(h).padStart(2, "0")}:${String(mi).padStart(2, "0")}`;
+}
+
+function addMinutes(t: string, mins: number) {
+  const [h, m] = t.split(":").map(Number);
+  const total = (((h * 60 + m + mins) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
+/** מה חסר כדי ש-YIT יקבל את הקובץ (ריק = תקין) */
+export function yitMissing(q: Quote) {
+  const t = q.meta?.trip ?? {};
+  const miss: string[] = [];
+  if (!/^\d{4}-\d{2}-\d{2}/.test(t.date ?? "")) miss.push("תאריך נסיעה");
+  if (!hhmm(t.time)) miss.push("שעת יציאה");
+  if (t.round_trip && !hhmm(t.return_time)) miss.push("שעת חזור");
+  if (!t.origin && !t.destination) miss.push("מוצא ויעד");
+  return miss;
+}
+
 const clean = (s: string | null | undefined) => (s ?? "").replace(/\t/g, " ").replace(/\r?\n/g, "^l").trim();
 
 /** שורה אחת בפורמט YIT (מערך של 33 שדות) */
 export function yitFields(q: Quote, opts: { tripType?: string } = {}) {
   const t = q.meta?.trip ?? {};
   const type = opts.tripType ?? "בין עירוני";
-  const start = t.time ?? "";
-  const end = t.round_trip ? t.return_time ?? "" : "";
+  const start = hhmm(t.time);
+  // YIT דורש תמיד שעת סיום ומשך. בנסיעה לכיוון אחד: יציאה + זמן הנסיעה (מעוגל ל-5 דק׳)
+  let end = t.round_trip ? hhmm(t.return_time) : "";
+  if (start && !end) {
+    const oneWay = Number(t.duration_min) || (Number(t.distance_km) ? Number(t.distance_km) : 60);
+    end = addMinutes(start, Math.max(30, Math.ceil(oneWay / 5) * 5));
+  }
   const dur = duration(start, end);
 
   const route = [t.origin, t.destination].filter(Boolean).join(" - ") + (t.round_trip ? " וחזרה" : "");
@@ -60,9 +92,9 @@ export function yitFields(q: Quote, opts: { tripType?: string } = {}) {
   f[15] = start;
   f[16] = end;
   f[17] = clean(q.client_name);
-  f[18] = clean(q.client_tax_id);
+  f[18] = (q.client_tax_id ?? "").replace(/\D/g, "");
   f[21] = clean(q.title);
-  f[22] = details.map(clean).join("^l");
+  f[22] = details.map((d) => d.replace(/\t/g, " ").replace(/\r?\n/g, "^l")).join("^l");
   f[23] = "0";
   f[27] = "0";
   f[28] = "0";

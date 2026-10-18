@@ -23,6 +23,7 @@ type Props = {
   sync?: { label: string; ok?: boolean; at?: string; code?: number | null }[];
   tripCsv?: string | null;
   yitB64?: string | null;
+  yitMissing?: string[];
   canRemind?: boolean;
   mailReady?: boolean;
 };
@@ -189,8 +190,14 @@ export default function QuoteActions(p: Props) {
           <div className="mb-2 flex items-center gap-2 text-sm font-bold text-stone-500">
             <Bus className="size-4" /> הנסיעה
           </div>
+          {p.yitB64 && p.yitMissing?.length ? (
+            <div className="mb-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-amber-200">
+              כדי ש-YIT יקבל את הקובץ חסר: <b>{p.yitMissing.join(", ")}</b>. עורכים את ההצעה, ממלאים ושומרים.
+            </div>
+          ) : null}
           {p.yitB64 ? (
             <button
+              disabled={!!p.yitMissing?.length}
               className="btn-primary mb-2 w-full"
               onClick={() => {
                 const bin = atob(p.yitB64!);
